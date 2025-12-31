@@ -33,10 +33,10 @@ export async function fetchAnimeBySlug(slug: string) {
     return res.json();
 }
 
-export async function fetchAnimesByFilter(type: RealAnimeType){
+export async function fetchAnimesByFilter(type: RealAnimeType, page = 1){
     const base = process.env.EXTERNAL_API_BASE!;
 
-    const res = await fetch(`${base}/api/search/by-filter?order=title`, {
+    const res = await fetch(`${base}/api/search/by-filter?order=title&page=${page}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ types: [type] }),

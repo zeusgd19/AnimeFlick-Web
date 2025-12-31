@@ -33,13 +33,6 @@ export default function Header(){
                     >
                         Mis listas
                     </Link>
-
-                    <Link
-                        href="/download"
-                        className="hidden rounded-xl border px-3 py-2 text-sm font-medium hover:bg-accent md:inline-flex"
-                    >
-                        Descargar APK
-                    </Link>
                     <Link
                         href="/login"
                         className="rounded-xl bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90"

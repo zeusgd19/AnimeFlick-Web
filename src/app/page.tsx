@@ -16,6 +16,7 @@ import {
     RecentEpisode
 } from "@/types/anime";
 import QuickFilters from "@/components/Filters/quick-filters";
+import {Pagination} from "@/components/Pagination/pagination";
 
 
 const genres = [
@@ -196,17 +197,20 @@ const allowedTypes: RealAnimeType[] = ["ova", "special", "movie", "tv"];
 const isRealAnimeType = (v: any): v is RealAnimeType => allowedTypes.includes(v);
 
 export default async function HomePage({searchParams}: {
-    searchParams?: { type?: RealAnimeType };
+    searchParams?: { type?: RealAnimeType, page?: number };
 }) {
 
     const res = await searchParams;
     const type = res?.type
+    const rawPage = res?.page
+
+    const page = Math.max(1, Number(rawPage ?? 1));
 
     const typeValid = !!type && isRealAnimeType(type);
 
     console.log(type);
 
-    const filtered = typeValid ? await fetchAnimesByFilter(type) : null;
+    const filtered = typeValid ? await fetchAnimesByFilter(type, page) : null;
 
     console.log(filtered)
 
@@ -291,11 +295,17 @@ export default async function HomePage({searchParams}: {
                     <>
                         <section className="mt-10">
                             <SectionHeader title={type?.toUpperCase()} href="/search?sort=trending"/>
-                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
                                 {filtered.data.media.map((a: FilteredAnime) => (
                                     <AnimeCardFiltered key={a.title} anime={a}/>
                                 ))}
                             </div>
+
+                            <Pagination
+                                basePath="/"
+                                query={{ type }}
+                                data={filtered.data}
+                            />
                         </section>
                     </>
                 ):(
