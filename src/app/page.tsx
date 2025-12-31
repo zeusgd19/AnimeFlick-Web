@@ -1,77 +1,84 @@
 // app/page.tsx
 import Link from "next/link";
 import Header from "@/components/Header/header";
-import {fetchAnimeBySlug, fetchAnimesOnAir, fetchLatestEpisodesFromExternal} from "@/lib/providers/anime";
 import {
-  Anime,
-  AnimeOnAir,
-  AnimeOnAirComplete,
-  AnimeRecentEpisodeResponse, AnimeResponse,
-  AnimesOnAirResponse,
-  RecentEpisode
+    fetchAnimeBySlug,
+    fetchAnimesByFilter,
+    fetchAnimesOnAir,
+    fetchLatestEpisodesFromExternal
+} from "@/lib/providers/anime";
+import {
+    Anime,
+    AnimeOnAir,
+    AnimeOnAirComplete,
+    AnimeRecentEpisodeResponse, AnimeResponse,
+    AnimesOnAirResponse, FilteredAnime, FilteredAnimesResponse, RealAnimeType,
+    RecentEpisode
 } from "@/types/anime";
+import QuickFilters from "@/components/Filters/quick-filters";
 
 
 const genres = [
-  "Acción",
-  "Aventura",
-  "Comedia",
-  "Drama",
-  "Fantasía",
-  "Romance",
-  "Sci-Fi",
-  "Slice of Life",
-  "Thriller",
-  "Sobrenatural",
+    "Acción",
+    "Aventura",
+    "Comedia",
+    "Drama",
+    "Fantasía",
+    "Romance",
+    "Sci-Fi",
+    "Slice of Life",
+    "Thriller",
+    "Sobrenatural",
 ];
 
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+function Badge({children}: { children: React.ReactNode }) {
+    return (
+        <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
       {children}
     </span>
-  );
+    );
 }
 
-function AnimeCardOnAir({ anime }: { anime: AnimeOnAirComplete }) {
-  return (
-      <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
-        {/* Imagen + overlays */}
-        <div className="relative overflow-hidden">
-          <img
-              src={anime.cover}
-              alt={anime.anime.title}
-              className="block w-full h-auto object-contain bg-black/5 transition duration-300 group-hover:scale-[1.01]"
-          />
+function AnimeCardOnAir({anime}: { anime: AnimeOnAirComplete }) {
+    return (
+        <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
+            {/* Imagen + overlays */}
+            <div className="relative overflow-hidden">
+                <img
+                    src={anime.cover}
+                    alt={anime.anime.title}
+                    className="block w-full h-auto object-contain bg-black/5 transition duration-300 group-hover:scale-[1.01]"
+                />
 
-          {/* Título sobre la imagen */}
-          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
-            <h3 className="line-clamp-2 text-sm font-semibold text-white">
-              {anime.anime.title}
-            </h3>
-          </div>
+                {/* Título sobre la imagen */}
+                <div
+                    className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                    <h3 className="line-clamp-2 text-sm font-semibold text-white">
+                        {anime.anime.title}
+                    </h3>
+                </div>
 
-          {/* Hover actions (encima del título) */}
-          <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
-            <Link
-                href={`/anime/${anime.anime.slug}`}
-                className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font_toggle:font-medium text-black backdrop-blur hover:bg-white"
-            >
-              Detalles
-            </Link>
-            <button
-                className="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
-                type="button"
-            >
-              + Lista
-            </button>
-          </div>
+                {/* Hover actions (encima del título) */}
+                <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
+                    <Link
+                        href={`/anime/${anime.anime.slug}`}
+                        className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font_toggle:font-medium text-black backdrop-blur hover:bg-white"
+                    >
+                        Detalles
+                    </Link>
+                    <button
+                        className="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
+                        type="button"
+                    >
+                        + Lista
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-  );
+    );
 }
 
-function AnimeCard({ anime }: { anime: RecentEpisode }) {
+function AnimeCardFiltered({anime}: { anime: FilteredAnime }) {
     return (
         <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
             {/* Imagen + overlays */}
@@ -83,7 +90,47 @@ function AnimeCard({ anime }: { anime: RecentEpisode }) {
                 />
 
                 {/* Título sobre la imagen */}
-                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                <div
+                    className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                    <h3 className="line-clamp-2 text-sm font-semibold text-white">
+                        {anime.title}
+                    </h3>
+                </div>
+
+                {/* Hover actions (encima del título) */}
+                <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
+                    <Link
+                        href={`/anime/${anime.title}`}
+                        className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font_toggle:font-medium text-black backdrop-blur hover:bg-white"
+                    >
+                        Detalles
+                    </Link>
+                    <button
+                        className="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
+                        type="button"
+                    >
+                        + Lista
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AnimeCard({anime}: { anime: RecentEpisode }) {
+    return (
+        <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
+            {/* Imagen + overlays */}
+            <div className="relative overflow-hidden">
+                <img
+                    src={anime.cover}
+                    alt={anime.title}
+                    className="block w-full h-auto object-contain bg-black/5 transition duration-300 group-hover:scale-[1.01]"
+                />
+
+                {/* Título sobre la imagen */}
+                <div
+                    className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
                     <h3 className="line-clamp-2 text-sm font-semibold text-white">
                         {anime.title}
                     </h3>
@@ -122,169 +169,185 @@ function AnimeCard({ anime }: { anime: RecentEpisode }) {
 
 
 function SectionHeader({
-                         title,
-                         href,
-                         actionLabel = "Ver todo",
+                           title,
+                           href,
+                           actionLabel = "Ver todo",
                        }: {
-  title: string;
-  href?: string;
-  actionLabel?: string;
+    title: string;
+    href?: string;
+    actionLabel?: string;
 }) {
-  return (
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <p className="text-sm text-muted-foreground">Actualizado con lo último disponible</p>
+    return (
+        <div className="flex items-end justify-between gap-3">
+            <div>
+                <h2 className="text-lg font-semibold">{title}</h2>
+                <p className="text-sm text-muted-foreground">Actualizado con lo último disponible</p>
+            </div>
+            {href ? (
+                <Link href={href} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                    {actionLabel} →
+                </Link>
+            ) : null}
         </div>
-        {href ? (
-            <Link href={href} className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              {actionLabel} →
-            </Link>
-        ) : null}
-      </div>
-  );
+    );
 }
 
-export default async function HomePage() {
+const allowedTypes: RealAnimeType[] = ["ova", "special", "movie", "tv"];
+const isRealAnimeType = (v: any): v is RealAnimeType => allowedTypes.includes(v);
 
-  const latestEpisodes: AnimeRecentEpisodeResponse = await fetchLatestEpisodesFromExternal();
+export default async function HomePage({searchParams}: {
+    searchParams?: { type?: RealAnimeType };
+}) {
 
-  const animesOnAirResponse: AnimesOnAirResponse = await fetchAnimesOnAir();
-  let animes: AnimeOnAirComplete[] = [];
-  for (const animeOnAir of animesOnAirResponse.data) {
-    const anime: AnimeResponse = await fetchAnimeBySlug(animeOnAir.slug);
+    const res = await searchParams;
+    const type = res?.type
 
-    const cover = anime.data.cover;
+    const typeValid = !!type && isRealAnimeType(type);
 
-    animes.push({
-      anime: animeOnAir,
-      cover: cover,
-    });
+    console.log(type);
 
-    console.log(anime)
-  }
+    const filtered = typeValid ? await fetchAnimesByFilter(type) : null;
 
-  return (
-      <div className="min-h-dvh bg-background">
-        {/* Header */}
-        <Header></Header>
+    console.log(filtered)
 
-        <main className="mx-auto max-w-6xl px-4 py-6">
-          {/* Hero */}
-          <section className="relative overflow-hidden rounded-3xl border bg-card">
-            <div className="absolute inset-0">
-              {/* Imagen de fondo */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                  src={"hola"}
-                  alt={"hola"}
-                  className="h-full w-full object-cover blur-[1px] opacity-30"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/30" />
-            </div>
+    const latestEpisodes = !typeValid ? await fetchLatestEpisodesFromExternal() : null;
+    const animesOnAirResponse = await fetchAnimesOnAir();
 
-            <div className="relative grid gap-6 p-6 md:grid-cols-[1.2fr_0.8fr] md:p-10">
-              <div className="flex flex-col justify-center">
-                <div className="mb-3 flex flex-wrap gap-2">
+    const animes: AnimeOnAirComplete[] = animesOnAirResponse
+        ? await Promise.all(
+            animesOnAirResponse.data.map(async (animeOnAir: AnimeOnAir) => {
+                const anime: AnimeResponse = await fetchAnimeBySlug(animeOnAir.slug);
+                return { anime: animeOnAir, cover: anime.data.cover };
+            })
+        )
+        : [];
+
+
+    return (
+        <div className="min-h-dvh bg-background">
+            {/* Header */}
+            <Header></Header>
+
+            <main className="mx-auto max-w-6xl px-4 py-6">
+                {/* Hero */}
+                <section className="relative overflow-hidden rounded-3xl border bg-card">
+                    <div className="absolute inset-0">
+                        {/* Imagen de fondo */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={"hola"}
+                            alt={"hola"}
+                            className="h-full w-full object-cover blur-[1px] opacity-30"
+                        />
+                        <div
+                            className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/30"/>
+                    </div>
+
+                    <div className="relative grid gap-6 p-6 md:grid-cols-[1.2fr_0.8fr] md:p-10">
+                        <div className="flex flex-col justify-center">
+                            <div className="mb-3 flex flex-wrap gap-2">
                 <span className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
                   Destacado
                 </span>
-                  <span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+                                <span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">
                   Trending
                 </span>
-                </div>
+                            </div>
 
-                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                  Si
-                </h1>
-                <p className="mt-3 max-w-prose text-sm text-muted-foreground">
-                  Descubre lo más visto, sigue tu progreso y guarda tus animes en listas.
-                  (Aquí irá una sinopsis corta cuando lo conectes a tu API.)
-                </p>
+                            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                                Si
+                            </h1>
+                            <p className="mt-3 max-w-prose text-sm text-muted-foreground">
+                                Descubre lo más visto, sigue tu progreso y guarda tus animes en listas.
+                                (Aquí irá una sinopsis corta cuando lo conectes a tu API.)
+                            </p>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <Link
-                      href={`/anime/1`}
-                      className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                  >
-                    Ver detalles
-                  </Link>
-                  <button
-                      type="button"
-                      className="rounded-2xl border px-4 py-2 text-sm font-medium hover:bg-accent"
-                  >
-                    + Añadir a lista
-                  </button>
-                </div>
-              </div>
+                            <div className="mt-5 flex flex-wrap gap-2">
+                                <Link
+                                    href={`/anime/1`}
+                                    className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
+                                >
+                                    Ver detalles
+                                </Link>
+                                <button
+                                    type="button"
+                                    className="rounded-2xl border px-4 py-2 text-sm font-medium hover:bg-accent"
+                                >
+                                    + Añadir a lista
+                                </button>
+                            </div>
+                        </div>
 
-              <div className="mx-auto w-full max-w-[260px] md:mx-0 md:ml-auto">
-                <AnimeCard anime={latestEpisodes.data[1]} />
-              </div>
-            </div>
-          </section>
+                        <div className="mx-auto w-full max-w-[260px] md:mx-0 md:ml-auto">
+                            <AnimeCardOnAir anime={animes[1]}/>
+                        </div>
+                    </div>
+                </section>
 
-          {/* Quick filters */}
-          <section className="mt-6 flex flex-wrap gap-2">
-            {["En emisión", "Tendencia", "Top", "Películas", "Nuevos"].map((t) => (
-                <button
-                    key={t}
-                    type="button"
-                    className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                >
-                  {t}
-                </button>
-            ))}
-          </section>
+                {/* Quick filters */}
+                <QuickFilters active={type}></QuickFilters>
 
-          {/* Tendencia */}
-          <section className="mt-10">
-            <SectionHeader title="Episodios Recientes" href="/search?sort=trending"/>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {latestEpisodes.data.map((a) => (
-                  <AnimeCard key={a.slug} anime={a}/>
-              ))}
-            </div>
-          </section>
+                {typeValid ? (
+                    <>
+                        <section className="mt-10">
+                            <SectionHeader title={type?.toUpperCase()} href="/search?sort=trending"/>
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                                {filtered.data.media.map((a: FilteredAnime) => (
+                                    <AnimeCardFiltered key={a.title} anime={a}/>
+                                ))}
+                            </div>
+                        </section>
+                    </>
+                ):(
+                    <>
+                        <section className="mt-10">
+                            <SectionHeader title="Episodios Recientes" href="/search?sort=trending"/>
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                                {latestEpisodes.data.map((a: RecentEpisode) => (
+                                <AnimeCard key={a.slug} anime={a}/>))}
+                            </div>
+                        </section>
 
-          {/* En emisión */}
-          <section className="mt-10">
-            <SectionHeader title="En emisión" href="/search?filter=airing" />
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {animes.map((a) => (
-                  <AnimeCardOnAir key={a.anime.slug} anime={a}/>
-              ))}
-            </div>
-          </section>
+                        <section className="mt-10">
+                            <SectionHeader title="En emisión" href="/search?filter=airing"/>
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                                {animes.map((a) => (
+                                    <AnimeCardOnAir key={a.anime.slug} anime={a}/>
+                                ))}
+                            </div>
+                        </section>
+                    </>
+                )}
 
-          {/* Géneros */}
-          <section className="mt-10">
-            <SectionHeader title="Explorar por géneros" href="/search" actionLabel="Abrir búsqueda" />
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-              {genres.map((g) => (
-                  <Link
-                      key={g}
-                      href={`/search?genre=${encodeURIComponent(g)}`}
-                      className="rounded-2xl border bg-card px-4 py-3 text-sm font-medium hover:bg-accent"
-                  >
-                    {g}
-                  </Link>
-              ))}
-            </div>
-          </section>
 
-          {/* Footer */}
-          <footer className="mt-14 border-t py-8 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p>© {new Date().getFullYear()} AnimeFlick</p>
-              <div className="flex gap-4">
-                <Link href="/legal" className="hover:text-foreground">Legal</Link>
-                <Link href="/privacy" className="hover:text-foreground">Privacidad</Link>
-                <Link href="/about" className="hover:text-foreground">Acerca de</Link>
-              </div>
-            </div>
-          </footer>
-        </main>
-      </div>
-  );
+                {/* Géneros */}
+                <section className="mt-10">
+                    <SectionHeader title="Explorar por géneros" href="/search" actionLabel="Abrir búsqueda"/>
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                        {genres.map((g) => (
+                            <Link
+                                key={g}
+                                href={`/search?genre=${encodeURIComponent(g)}`}
+                                className="rounded-2xl border bg-card px-4 py-3 text-sm font-medium hover:bg-accent"
+                            >
+                                {g}
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Footer */}
+                <footer className="mt-14 border-t py-8 text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p>© {new Date().getFullYear()} AnimeFlick</p>
+                        <div className="flex gap-4">
+                            <Link href="/legal" className="hover:text-foreground">Legal</Link>
+                            <Link href="/privacy" className="hover:text-foreground">Privacidad</Link>
+                            <Link href="/about" className="hover:text-foreground">Acerca de</Link>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    );
 }

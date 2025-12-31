@@ -19,6 +19,25 @@ export interface RecentEpisode{
     slug: string
 }
 
+export interface FilteredAnime{
+    title: string,
+    cover: string,
+    synopsis: string,
+    status: string,
+    rating: string,
+    type: AnimeType,
+    url: string
+}
+
+export interface FilteredAnimeData {
+    currentPage: number,
+    hasNextPage: boolean,
+    previousPage: string,
+    nextPage: string,
+    foundPages: number,
+    media: FilteredAnime[]
+}
+
 export interface AnimeOnAir{
     title: string,
     type: AnimeType,
@@ -42,3 +61,8 @@ export interface AnimesOnAirResponse {
 export interface AnimeRecentEpisodeResponse{
     data: RecentEpisode[],
 }
+
+export interface FilteredAnimesResponse {
+    data: FilteredAnimeData
+}
+
