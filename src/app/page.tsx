@@ -79,7 +79,20 @@ function AnimeCardOnAir({anime}: { anime: AnimeOnAirComplete }) {
     );
 }
 
+export function slugifyTitle(title: string): string {
+    return title
+        .toLowerCase()
+        .normalize("NFD")                    // separa acentos
+        .replace(/[\u0300-\u036f]/g, "")     // quita acentos
+        .replace(/(\d)\.(\d)/g, "$1$2")      // 2.5 -> 25
+        .replace(/(\d)-(?=[a-z])/g, "$1")    // 25-jigen -> 25jigen
+        .replace(/[^\p{L}\p{N}]+/gu, "-")    // cualquier cosa rara -> "-"
+        .replace(/-+/g, "-")                 // colapsa ---
+        .replace(/^-+|-+$/g, "");            // recorta - al inicio/fin
+}
+
 function AnimeCardFiltered({anime}: { anime: FilteredAnime }) {
+    const slug = slugifyTitle(anime.title);
     return (
         <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
             {/* Imagen + overlays */}
@@ -101,7 +114,7 @@ function AnimeCardFiltered({anime}: { anime: FilteredAnime }) {
                 {/* Hover actions (encima del título) */}
                 <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
                     <Link
-                        href={`/anime/${anime.title}`}
+                        href={`/anime/${slug}`}
                         className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font_toggle:font-medium text-black backdrop-blur hover:bg-white"
                     >
                         Detalles
