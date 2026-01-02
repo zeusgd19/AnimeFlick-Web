@@ -96,7 +96,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             })}
                         </div>
 
-                        <Pagination basePath="/search" query={{page}} data={results.data}></Pagination>
+                        <Pagination basePath="/search" query={{q:query}} data={results.data}></Pagination>
                     </section>
                 )}
             </main>
