@@ -55,6 +55,7 @@ export function Pagination({
             {hasPrev ? (
                 <Link
                     href={hrefWithPage(basePath, query, current - 1)}
+                    scroll={false}
                     className="rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                     ←
@@ -71,6 +72,7 @@ export function Pagination({
                     <Link
                         key={p}
                         href={hrefWithPage(basePath, query, p)}
+                        scroll={false}
                         className={[
                             "rounded-xl border px-3 py-2 text-sm font-medium",
                             p === current ? "bg-foreground text-background" : "bg-card hover:bg-accent",
@@ -85,6 +87,7 @@ export function Pagination({
             {hasNext ? (
                 <Link
                     href={hrefWithPage(basePath, query, current + 1)}
+                    scroll={false}
                     className="rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
                     →

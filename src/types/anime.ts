@@ -23,8 +23,8 @@ export interface FilteredAnime{
     title: string,
     cover: string,
     synopsis: string,
-    status: string,
     rating: string,
+    slug: string,
     type: AnimeType,
     url: string
 }

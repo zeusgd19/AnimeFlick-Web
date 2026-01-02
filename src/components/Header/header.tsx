@@ -1,7 +1,22 @@
+"use client";
 import Link from "next/link";
 import SearchMobile from "@/components/Header/SearchMobile/search-mobile";
+import {useRouter} from "next/navigation";
+import {useState} from "react";
 
 export default function Header(){
+    const router = useRouter();
+    const [query, setQuery] = useState("");
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key !== "Enter") return;
+
+        const q = query.trim();
+        if (!q) return;
+
+        router.push(`/search?q=${encodeURIComponent(q)}`);
+    };
+
     return (
         <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
@@ -14,6 +29,9 @@ export default function Header(){
                     <div className="flex items-center rounded-2xl border bg-card px-3 py-2">
                         <span className="text-muted-foreground">⌕</span>
                         <input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             className="w-full bg-transparent px-2 text-sm outline-none"
                             placeholder="Busca anime, estudio, género…"
                         />

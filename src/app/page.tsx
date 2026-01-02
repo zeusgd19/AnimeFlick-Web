@@ -92,7 +92,6 @@ export function slugifyTitle(title: string): string {
 }
 
 function AnimeCardFiltered({anime}: { anime: FilteredAnime }) {
-    const slug = slugifyTitle(anime.title);
     return (
         <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
             {/* Imagen + overlays */}
@@ -114,7 +113,7 @@ function AnimeCardFiltered({anime}: { anime: FilteredAnime }) {
                 {/* Hover actions (encima del título) */}
                 <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
                     <Link
-                        href={`/anime/${slug}`}
+                        href={`/anime/${anime.slug}`}
                         className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font_toggle:font-medium text-black backdrop-blur hover:bg-white"
                     >
                         Detalles
