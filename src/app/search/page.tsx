@@ -1,9 +1,9 @@
 import Header from "@/components/Header/header";
 import Link from "next/link";
 import { fetchSearchAnime } from "@/lib/providers/anime";
-import { slugifyTitle } from "@/app/page";
 import {FilteredAnime, FilteredAnimesResponse} from "@/types/anime";
 import {Pagination} from "@/components/Pagination/pagination";
+import AnimeCard from "@/components/AnimeCard/anime-card";
 
 type SearchPageProps = {
     searchParams?: {
@@ -46,52 +46,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     </p>
                 )}
 
-                {query && results.data.media.length === 0 && (
+                {query && results?.data?.media?.length === 0 || results == null && (
                     <p className="text-sm text-muted-foreground">
                         No se han encontrado resultados 😢
                     </p>
                 )}
 
                 {/* Resultados */}
-                {query && results.data.media.length > 0 && (
+                {query && results?.data?.media?.length > 0 && (
                     <section>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                             {results.data.media.map((anime: FilteredAnime) => {
-                                const slug = anime.slug ?? slugifyTitle(anime.title);
-
                                 return (
-                                    <div
-                                        key={slug}
-                                        className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md"
-                                    >
-                                        <div className="relative overflow-hidden">
-                                            <img
-                                                src={anime.cover}
-                                                alt={anime.title}
-                                                className="block w-full h-auto object-contain bg-black/5 transition duration-300 group-hover:scale-[1.01]"
-                                            />
-
-                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
-                                                <h3 className="line-clamp-2 text-sm font-semibold text-white">
-                                                    {anime.title}
-                                                </h3>
-                                            </div>
-
-                                            <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
-                                                <Link
-                                                    href={`/anime/${slug}`}
-                                                    className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font-medium text-black backdrop-blur hover:bg-white"
-                                                >
-                                                    Detalles
-                                                </Link>
-                                                <button
-                                                    className="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
-                                                >
-                                                    + Lista
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <AnimeCard key={anime.title} anime={anime} />
                                 );
                             })}
                         </div>

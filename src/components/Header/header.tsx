@@ -21,7 +21,7 @@ export default function Header(){
         <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
                 <Link href="/" className="flex items-center gap-2 font-semibold">
-                    <img src="logo_a.png" className="inline-flex h-14 w-14 items-center justify-center rounded-xl"/>
+                    <img src="/logo_a.png" className="inline-flex h-14 w-14 items-center justify-center rounded-xl"/>
                     <p className="text-xl">AnimeFlick</p>
                 </Link>
 

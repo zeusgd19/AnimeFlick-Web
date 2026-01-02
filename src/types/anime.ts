@@ -1,16 +1,50 @@
 export type RealAnimeType = "tv" | "movie" | "ova" | "special";
 export type AnimeType = "Anime" | "Película" | "OVA" | "Especial";
+export type CardAnime =
+    | { kind: "recent"; title: string; slug: string; cover: string; number: number }
+    | { kind: "onAir"; title: string; slug: string; cover: string; type: AnimeType }
+    | { kind: "filtered"; title: string; slug: string; cover: string; type: AnimeType; rating: string; synopsis: string };
 
 export interface Anime{
     title: string,
+    alternative_titles: Array<string>,
     cover: string,
     synopsis: string,
+    type: AnimeType,
     status: string,
     rating: string,
     genres: Array<string>,
     next_airing_episode?: string,
-    episodes: Array<string>,
+    episodes: Array<Episode>,
+    url: string,
+    related: RelatedAnime[]
 }
+
+export interface Episode {
+    number: number,
+    slug: string,
+    url: string
+}
+
+export interface ServerEpisode {
+    name: string,
+    download?: string,
+    embed?: string
+}
+
+export interface ServerEpisodeData {
+    title: string,
+    number: number,
+    servers: ServerEpisode[]
+}
+
+export interface RelatedAnime {
+    title: string,
+    relation: string,
+    slug: string,
+    url: string
+}
+
 
 export interface RecentEpisode{
     title: string,
@@ -64,5 +98,9 @@ export interface AnimeRecentEpisodeResponse{
 
 export interface FilteredAnimesResponse {
     data: FilteredAnimeData
+}
+
+export interface ServerEpisodeResponse {
+    data: ServerEpisodeData,
 }
 
