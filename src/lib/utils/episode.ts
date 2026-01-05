@@ -12,3 +12,29 @@ export function parseEpisodeSlug(episodeSlug: string): { animeSlug: string; numb
 
     return { animeSlug, number };
 }
+
+const KEY = "seenEpisodes";
+
+export function getSeenEpisodes(): string[] {
+    if (typeof window === "undefined") return [];
+    try {
+        return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    } catch {
+        return [];
+    }
+}
+
+export function isEpisodeSeen(slug: string): boolean {
+    return getSeenEpisodes().includes(slug);
+}
+
+export function toggleEpisodeSeen(slug: string): boolean {
+    const current = getSeenEpisodes();
+
+    const updated = current.includes(slug)
+        ? current.filter(s => s !== slug)
+        : [...current, slug];
+
+    localStorage.setItem(KEY, JSON.stringify(updated));
+    return updated.includes(slug);
+}

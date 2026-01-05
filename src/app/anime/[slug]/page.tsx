@@ -4,6 +4,7 @@ import Header from "@/components/Header/header";
 import { fetchAnimeBySlug, fetchBannerFromAniListByTitle } from "@/lib/providers/anime";
 import type { AnimeResponse, Episode, RelatedAnime } from "@/types/anime";
 import Footer from "@/components/Footer/footer";
+import EpisodePill from "@/components/Episode/episode-pill";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -28,38 +29,38 @@ function Stat({
     );
 }
 
-function EpisodePill({ ep }: { ep: Episode }) {
-    return (
-        <div className="group flex items-center justify-between gap-3 rounded-2xl border bg-card p-3 hover:bg-accent">
-            <div className="min-w-0">
-                <p className="text-sm font-semibold">
-                    Episodio {ep.number}
-                </p>
-                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                    {ep.slug}
-                </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-                <Link
-                    href={`/watch/${ep.slug}`}
-                    className="rounded-xl bg-foreground px-3 py-2 text-xs font-medium text-background hover:opacity-90"
-                >
-                    Ver
-                </Link>
-                <a
-                    href={ep.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-xl border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-                    title="Abrir fuente"
-                >
-                    Fuente ↗
-                </a>
-            </div>
-        </div>
-    );
-}
+// function EpisodePill({ ep }: { ep: Episode }) {
+//     return (
+//         <div className="group flex items-center justify-between gap-3 rounded-2xl border bg-card p-3 hover:bg-accent">
+//             <div className="min-w-0">
+//                 <p className="text-sm font-semibold">
+//                     Episodio {ep.number}
+//                 </p>
+//                 <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+//                     {ep.slug}
+//                 </p>
+//             </div>
+//
+//             <div className="flex shrink-0 items-center gap-2">
+//                 <Link
+//                     href={`/watch/${ep.slug}`}
+//                     className="rounded-xl bg-foreground px-3 py-2 text-xs font-medium text-background hover:opacity-90"
+//                 >
+//                     Ver
+//                 </Link>
+//                 <a
+//                     href={ep.url}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="rounded-xl border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+//                     title="Abrir fuente"
+//                 >
+//                     Fuente ↗
+//                 </a>
+//             </div>
+//         </div>
+//     );
+// }
 
 function RelatedCard({ r }: { r: RelatedAnime }) {
     return (
