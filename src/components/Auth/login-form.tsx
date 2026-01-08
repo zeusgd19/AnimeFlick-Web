@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {useAuth} from "@/context/auth-context";
-import {SignInResponse} from "@/types/user";
-import js from "@eslint/js";
 
 export default function LoginForm() {
     const router = useRouter();

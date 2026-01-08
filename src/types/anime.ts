@@ -20,6 +20,11 @@ export interface Anime{
     related: RelatedAnime[]
 }
 
+export type ProgressAnimeResponse = {
+    message?: string | null;
+    animes: FilteredAnime[];
+};
+
 export interface Episode {
     number: number,
     slug: string,

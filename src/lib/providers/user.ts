@@ -1,4 +1,6 @@
 import {AuthBody} from "@/types/user";
+import {cookies} from "next/headers";
+import {ProgressAnimeResponse} from "@/types/anime";
 
 
 function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, ms = 8000) {
@@ -46,4 +48,23 @@ export async function SignUpUser(authBody: AuthBody){
         next: { revalidate: 300 },
         timeoutMs: 8000,
     });
+}
+
+export async function fetchProgress(status: string): Promise<ProgressAnimeResponse> {
+    const base = process.env.EXTERNAL_USER_API_BASE;
+    if (!base) throw new Error("Missing EXTERNAL_USER_API_BASE");
+
+    const token = (await cookies()).get("af_access")?.value;
+    if (!token) throw new Error("NO_AUTH");
+
+    const url = `${base}/anime/progress?status=${encodeURIComponent(status)}`;
+
+    return safeJsonFetch<any>(url,{
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+        },
+        cache: "no-store"
+    })
 }

@@ -4,32 +4,6 @@ import Header from "@/components/Header/header";
 import Footer from "@/components/Footer/footer";
 import LoginForm from "@/components/Auth/login-form";
 
-function Field({
-                   label,
-                   type = "text",
-                   placeholder,
-                   name,
-                   autoComplete,
-               }: {
-    label: string;
-    type?: string;
-    placeholder?: string;
-    name: string;
-    autoComplete?: string;
-}) {
-    return (
-        <label className="grid gap-2">
-            <span className="text-sm font-medium">{label}</span>
-            <input
-                name={name}
-                type={type}
-                placeholder={placeholder}
-                autoComplete={autoComplete}
-                className="h-11 w-full rounded-2xl border bg-card px-4 text-sm outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-foreground/10"
-            />
-        </label>
-    );
-}
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (

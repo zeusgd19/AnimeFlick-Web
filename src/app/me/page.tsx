@@ -26,6 +26,7 @@ function ListCard({
     return (
         <Link
             href={href}
+            prefetch
             className="group rounded-3xl border bg-card p-5 shadow-sm transition hover:bg-accent hover:shadow-md"
         >
             <div className="flex items-start justify-between gap-3">
