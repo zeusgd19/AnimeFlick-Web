@@ -3,10 +3,12 @@ import Link from "next/link";
 import SearchMobile from "@/components/Header/SearchMobile/search-mobile";
 import {useRouter} from "next/navigation";
 import {useState} from "react";
+import {useAuth} from "@/context/auth-context";
 
 export default function Header(){
     const router = useRouter();
     const [query, setQuery] = useState("");
+    const {user, logout} = useAuth();
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key !== "Enter") return;
@@ -45,18 +47,34 @@ export default function Header(){
                     >
                         Explorar
                     </Link>
-                    <Link
-                        href="/me"
-                        className="hidden rounded-xl border px-3 py-2 text-sm font-medium hover:bg-accent sm:inline-flex"
-                    >
-                        Mis listas
-                    </Link>
-                    <Link
-                        href="/login"
-                        className="rounded-xl bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90"
-                    >
-                        Entrar
-                    </Link>
+                    {user ? (
+                        <Link
+                            href="/me"
+                            className="hidden rounded-xl border px-3 py-2 text-sm font-medium hover:bg-accent sm:inline-flex"
+                        >
+                            Mis listas
+                        </Link>
+                    ): null}
+                    {!user ? (
+                        <Link
+                            href="/login"
+                            className="rounded-xl bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90"
+                        >
+                            Entrar
+                        </Link>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                await logout();
+                                router.refresh(); // para que Server Components/layout pillen el cambio
+                            }}
+                            className="rounded-xl border px-3 py-2 text-sm font-medium hover:bg-accent"
+                            title={user.email ?? ""}
+                        >
+                            Salir
+                        </button>
+                    )}
                 </nav>
             </div>
 
