@@ -5,10 +5,17 @@ function hrefWithPage(basePath: string, query: Record<string, any>, page: number
 
     Object.entries(query).forEach(([k, v]) => {
         if (v === undefined || v === null || v === "") return;
+
+        if (Array.isArray(v)) {
+            v.forEach((item) => {
+                if (item === undefined || item === null || item === "") return;
+                params.append(k, String(item));
+            });
+            return;
+        }
+
         params.set(k, String(v));
     });
-
-    params.set("page", String(page));
     return `${basePath}?${params.toString()}`;
 }
 

@@ -76,15 +76,50 @@ export async function fetchAnimeBySlug(slug: string) {
     });
 }
 
-export async function fetchAnimesByFilter(type: RealAnimeType, page = 1) {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const url = `${base}/api/search/by-filter?order=title&page=${page}`;
+type FilterOrder = "title" | "rating" | "updated" | string;
 
-    // Search/filtros: tolerante (mejor mostrar "no disponible" que romper)
+export type AnimeFilterParams = {
+    page?: number;
+    order?: FilterOrder;
+
+    // filtros (todos opcionales)
+    types?: RealAnimeType[];
+    genres?: string[];
+    statuses?: number[]; // si quieres: (1 | 2 | 3)[]
+};
+
+// ✅ Overloads: (old) fetchAnimesByFilter(type, page) y (new) fetchAnimesByFilter({...})
+export async function fetchAnimesByFilter(type: RealAnimeType, page?: number): Promise<any>;
+export async function fetchAnimesByFilter(params: AnimeFilterParams): Promise<any>;
+
+export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
+    const base = process.env.EXTERNAL_API_BASE!;
+    const isLegacy = typeof arg1 === "string";
+
+    const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
+    const order = isLegacy ? "title" : (arg1.order ?? "title");
+
+    // Construimos body según filtros recibidos
+    const bodyObj: Record<string, any> = {};
+
+    if (isLegacy) {
+        bodyObj.types = [arg1]; // legacy => solo type
+    } else {
+        if (arg1.types?.length) bodyObj.types = arg1.types;
+        if (arg1.genres?.length) bodyObj.genres = arg1.genres;
+        if (arg1.statuses?.length) bodyObj.statuses = arg1.statuses;
+    }
+
+    // Si no se manda ningún filtro, tu API puede:
+    // - devolver todo
+    // - o devolver error
+    // decide tú. Yo dejo bodyObj vacío permitido.
+    const url = `${base}/api/search/by-filter?order=${encodeURIComponent(order)}&page=${page}`;
+
     return safeJsonFetch<any>(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ types: [type] }),
+        body: JSON.stringify(bodyObj),
         next: { revalidate: 300 },
         timeoutMs: 8000,
     });

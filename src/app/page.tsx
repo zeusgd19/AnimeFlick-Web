@@ -21,16 +21,16 @@ import AnimeCard from "@/components/AnimeCard/anime-card";
 import Footer from "@/components/Footer/footer";
 
 const genres = [
-    "Acción",
-    "Aventura",
-    "Comedia",
-    "Drama",
-    "Fantasía",
-    "Romance",
-    "Sci-Fi",
-    "Slice of Life",
-    "Thriller",
-    "Sobrenatural",
+    {key: "accion", label: "Acción"},
+    {key: "artes-marciales", label: "Artes marciales"},
+    {key: "aventura", label: "Aventura"},
+    {key: "carreras", label: "Carreras"},
+    {key: "ciencia-ficcion", label: "Ciencia Ficción"},
+    {key: "comedia", label: "Comedia"},
+    {key: "demencia", label: "Demencia"},
+    {key: "demonios", label: "Demonios"},
+    {key: "deportes", label: "Deportes"},
+    {key: "ecchi", label: "Ecchi"}
 ];
 
 function SectionHeader({
@@ -311,11 +311,11 @@ export default async function HomePage({
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
                         {genres.map((g) => (
                             <Link
-                                key={g}
-                                href={`/search?genre=${encodeURIComponent(g)}`}
+                                key={g.key}
+                                href={`/search?genre=${encodeURIComponent(g.key)}`}
                                 className="rounded-2xl border bg-card px-4 py-3 text-sm font-medium hover:bg-accent"
                             >
-                                {g}
+                                {g.label}
                             </Link>
                         ))}
                     </div>
