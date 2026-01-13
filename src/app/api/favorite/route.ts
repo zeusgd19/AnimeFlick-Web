@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ data: [] }, { status: 401 });
     }
 
-    const res = await fetch(`${USER_API}/anime/watched`, {
+    const res = await fetch(`${USER_API}/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
         // cache 0 porque esto depende del usuario
         cache: "no-store",
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     const json = await res.json().catch(() => null);
 
-    return NextResponse.json(json.episodes ?? { episodes: [] }, { status: res.status });
+    return NextResponse.json(json.favorites ?? { favroites: [] }, { status: res.status });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Invalid body" }, { status: 400 });
     }
 
-    const res = await fetch(`${USER_API}/anime/watched`, {
+    const res = await fetch(`${USER_API}/favorites/add`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

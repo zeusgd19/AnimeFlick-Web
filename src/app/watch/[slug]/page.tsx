@@ -5,6 +5,8 @@ import { fetchServersEpisode } from "@/lib/providers/anime";
 import { parseEpisodeSlug } from "@/lib/utils/episode";
 import type { ServerEpisodeResponse } from "@/types/anime";
 import Footer from "@/components/Footer/footer";
+import EpisodeSeenToggle from "@/components/Episode/episode-seen-toogle";
+import EpisodePill from "@/components/Episode/episode-pill";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -128,16 +130,6 @@ export default async function WatchPage({
                                     >
                                         ← Anterior
                                     </Link>
-
-                                    {/* Botón "Visto" (solo UI, sin lógica) */}
-                                    <button
-                                        type="button"
-                                        className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                                        title="Marcar episodio como visto (demo)"
-                                    >
-                                        ✓ Visto
-                                    </button>
-
                                     <Link
                                         href={`/watch/${nextSlug!}`}
                                         className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
@@ -174,14 +166,6 @@ export default async function WatchPage({
                                             <p className="text-xs text-muted-foreground">Servidores</p>
                                             <p className="mt-1 text-sm font-semibold">{episode.servers?.length ?? 0}</p>
                                         </div>
-
-                                        <button
-                                            type="button"
-                                            className="w-full rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                                            title="Marcar episodio como visto (demo)"
-                                        >
-                                            ✓ Marcar como visto
-                                        </button>
                                     </div>
 
                                     <div className="mt-5 flex gap-2">

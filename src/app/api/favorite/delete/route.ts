@@ -1,7 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-
-
-// ajusta el nombre de cookie si usas otro
+import {NextRequest, NextResponse} from "next/server";
 function getAccessToken(req: NextRequest) {
     return (
         req.cookies.get("af_access")?.value ||
@@ -9,26 +6,6 @@ function getAccessToken(req: NextRequest) {
         req.cookies.get("token")?.value ||
         ""
     );
-}
-
-export async function GET(req: NextRequest) {
-    const USER_API = process.env.EXTERNAL_USER_API_BASE!;
-    const token = getAccessToken(req);
-    console.log(token);
-    // si no hay sesión, devuelve vacío (no rompas)
-    if (!token) {
-        return NextResponse.json({ data: [] }, { status: 401 });
-    }
-
-    const res = await fetch(`${USER_API}/anime/watched`, {
-        headers: { Authorization: `Bearer ${token}` },
-        // cache 0 porque esto depende del usuario
-        cache: "no-store",
-    });
-
-    const json = await res.json().catch(() => null);
-
-    return NextResponse.json(json.episodes ?? { episodes: [] }, { status: res.status });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,7 +20,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Invalid body" }, { status: 400 });
     }
 
-    const res = await fetch(`${USER_API}/anime/watched`, {
+    const res = await fetch(`${USER_API}/favorites/delete`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

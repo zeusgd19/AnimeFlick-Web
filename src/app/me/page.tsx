@@ -242,14 +242,6 @@ export default async function MePage() {
                                         {user.email ?? "—"}
                                     </p>
                                 </div>
-
-                                <div className="rounded-2xl border bg-card p-4">
-                                    <p className="text-xs text-muted-foreground">Nota</p>
-                                    <p className="mt-1 text-sm">
-                                        Cuando conectes tu API, aquí puedes mostrar contadores:
-                                        favoritos, siguiendo, completados…
-                                    </p>
-                                </div>
                             </div>
                         </div>
 

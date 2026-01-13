@@ -6,6 +6,7 @@ import type { AnimeResponse, Episode, RelatedAnime } from "@/types/anime";
 import Footer from "@/components/Footer/footer";
 import EpisodePill from "@/components/Episode/episode-pill";
 import AddToProgressMenu from "@/components/Me/add-to-progress-menu";
+import AddToFavorite from "@/components/Me/add-to-favorite";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -142,7 +143,17 @@ export default async function AnimeDetailPage({
                                         rating: anime.rating,
                                         type: String(anime.type),
                                     }}
+                                    triggerClassName="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
                                 />
+
+                                <AddToFavorite anime={{
+                                    slug: slug,
+                                    title: anime.title,
+                                    cover: anime.cover,
+                                    rating: anime.rating,
+                                    type: String(anime.type),
+                                }}
+                                ></AddToFavorite>
 
                                 <a
                                     href={anime.url}
@@ -263,30 +274,21 @@ export default async function AnimeDetailPage({
                                     <Stat label="Próximo episodio" value={anime.next_airing_episode} />
                                 ) : null}
                             </div>
-
-                            <div className="mt-5 rounded-2xl border bg-card p-4">
-                                <p className="text-xs text-muted-foreground">Sugerencia</p>
-                                <p className="mt-1 text-sm">
-                                    Aquí luego puedes mostrar tu progreso real (visto / pendiente) cuando tengas la API de listas.
-                                </p>
-                            </div>
                         </section>
 
                         <section className="rounded-3xl border bg-card p-6 shadow-sm">
                             <h3 className="text-sm font-semibold">Acciones</h3>
                             <div className="mt-3 grid gap-2">
-                                <button
-                                    type="button"
-                                    className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                                >
-                                    + Añadir a mi lista
-                                </button>
-                                <button
-                                    type="button"
-                                    className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                                >
-                                    ✓ Marcar como visto (demo)
-                                </button>
+                                <AddToProgressMenu
+                                    anime={{
+                                        anime_slug: slug,
+                                        title: anime.title,
+                                        cover: anime.cover,
+                                        rating: anime.rating,
+                                        type: String(anime.type),
+                                    }}
+                                    triggerClassName="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
+                                />
                                 <Link
                                     href={`/watch/${episodes[0]?.slug ?? slug}`}
                                     className="rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
