@@ -16,6 +16,8 @@ function hrefWithPage(basePath: string, query: Record<string, any>, page: number
 
         params.set(k, String(v));
     });
+
+    params.set("page", String(page));
     return `${basePath}?${params.toString()}`;
 }
 
@@ -62,6 +64,7 @@ export function Pagination({
             {hasPrev ? (
                 <Link
                     href={hrefWithPage(basePath, query, current - 1)}
+                    prefetch
                     scroll={false}
                     className="rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
                 >
@@ -78,6 +81,7 @@ export function Pagination({
                 ) : (
                     <Link
                         key={p}
+                        prefetch
                         href={hrefWithPage(basePath, query, p)}
                         scroll={false}
                         className={[
@@ -94,6 +98,7 @@ export function Pagination({
             {hasNext ? (
                 <Link
                     href={hrefWithPage(basePath, query, current + 1)}
+                    prefetch
                     scroll={false}
                     className="rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
                 >

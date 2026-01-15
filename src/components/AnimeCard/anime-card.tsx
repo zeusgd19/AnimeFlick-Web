@@ -1,7 +1,9 @@
+"use client";
 import {CardAnime, AnimeOnAirComplete, FilteredAnime, RecentEpisode} from "@/types/anime";
 import Link from "next/link";
 import {FavoriteAnime} from "@/lib/utils/favorite";
 import AddToProgressMenu from "@/components/Me/add-to-progress-menu";
+import {useRouter} from "next/navigation";
 
 type InputAnime = AnimeOnAirComplete | FilteredAnime | RecentEpisode;
 
@@ -30,25 +32,52 @@ function toCardAnime(anime: InputAnime): CardAnime {
 }
 
 export default function AnimeCard({ anime }: { anime: InputAnime }) {
+    const router = useRouter();
     const card = toCardAnime(anime);
 
+    // Botón principal (lo que ya tenías)
     const href = card.kind === "recent" ? `/watch/${card.slug}` : `/anime/${card.slug}`;
     const primaryLabel = card.kind === "recent" ? "Ver" : "Detalles";
     const secondaryLabel = card.kind === "recent" ? "Visto" : "+ Lista";
 
+    // ✅ URL al clicar toda la card
+    // Si quieres SIEMPRE detalles: en "recent" necesitarías animeSlug (si no lo tienes, fallback a /watch)
+    const cardHref =
+        card.kind === "recent"
+            ? (("animeSlug" in card && (card as any).animeSlug) ? `/anime/${(card as any).animeSlug}` : href)
+            : `/anime/${card.slug}`;
+
+    function go() {
+        router.push(cardHref);
+    }
+
+    function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            go();
+        }
+    }
+
     return (
-        <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
+        <div
+            role="link"
+            tabIndex={0}
+            onClick={go}
+            onKeyDown={onKeyDown}
+            className="group relative cursor-pointer rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60"
+            aria-label={`Abrir ${card.title}`}
+        >
             <div className="relative overflow-hidden">
                 <img
                     src={card.cover}
                     alt={card.title}
                     className="block w-full h-auto object-contain bg-black/5 transition duration-300 group-hover:scale-[1.01]"
+                    draggable={false}
                 />
 
                 <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
                     <h3 className="line-clamp-2 text-sm font-semibold text-white">{card.title}</h3>
 
-                    {/* Extras según tipo (sin returns distintos) */}
                     {card.kind === "filtered" ? (
                         <div className="mt-1 flex gap-2">
               <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-white">
@@ -69,25 +98,31 @@ export default function AnimeCard({ anime }: { anime: InputAnime }) {
                     ) : null}
                 </div>
 
+                {/* Acciones (IMPORTANTE: stopPropagation) */}
                 <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
                     <Link
                         href={href}
+                        onClick={(e) => e.stopPropagation()}
                         className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font-medium text-black backdrop-blur hover:bg-white"
                     >
                         {primaryLabel}
                     </Link>
-                    {card.kind === "filtered" && (
-                        <AddToProgressMenu anime={{
-                            anime_slug: card.slug,
-                            title: card.title,
-                            cover: card.cover,
-                            rating: card.rating,
-                            type: card.type
-                        }}
-                                           triggerLabel={secondaryLabel}
-                                           triggerClassName="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
-                        />
-                        )}
+
+                    {card.kind === "filtered" ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <AddToProgressMenu
+                                anime={{
+                                    anime_slug: card.slug,
+                                    title: card.title,
+                                    cover: card.cover,
+                                    rating: card.rating,
+                                    type: card.type,
+                                }}
+                                triggerLabel={secondaryLabel}
+                                triggerClassName="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
+                            />
+                        </div>
+                    ) : null}
                 </div>
             </div>
 
@@ -104,54 +139,78 @@ export default function AnimeCard({ anime }: { anime: InputAnime }) {
     );
 }
 
-export  function AnimeFavoriteCard({ anime }: { anime: FavoriteAnime }) {
+export function AnimeFavoriteCard({ anime }: { anime: FavoriteAnime }) {
+    const router = useRouter();
 
     const href = `/anime/${anime.slug}`;
     const primaryLabel = "Detalles";
-    const secondaryLabel= "+ Lista";
+    const secondaryLabel = "+ Lista";
+
+    function go() {
+        router.push(href);
+    }
+
+    function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            go();
+        }
+    }
 
     return (
-        <div className="group rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md">
+        <div
+            role="link"
+            tabIndex={0}
+            onClick={go}
+            onKeyDown={onKeyDown}
+            className="group relative cursor-pointer rounded-2xl border bg-card overflow-hidden shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60"
+            aria-label={`Abrir ${anime.title}`}
+        >
             <div className="relative overflow-hidden">
                 <img
                     src={anime.cover}
                     alt={anime.title}
                     className="block w-full h-auto object-contain bg-black/5 transition duration-300 group-hover:scale-[1.01]"
+                    draggable={false}
                 />
 
                 <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
                     <h3 className="line-clamp-2 text-sm font-semibold text-white">{anime.title}</h3>
 
-                    {/* Extras según tipo (sin returns distintos) */}
-                        <div className="mt-1 flex gap-2">
-              <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-white">
-                {anime.type}
-              </span>
-                            <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-white">
-                ⭐ {anime.rating}
-              </span>
-                        </div>
+                    <div className="mt-1 flex gap-2">
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-white">
+              {anime.type}
+            </span>
+                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-white">
+              ⭐ {anime.rating}
+            </span>
+                    </div>
+                </div>
 
-
+                {/* Hover actions (stopPropagation para que no navegue la card) */}
                 <div className="absolute inset-x-3 bottom-14 hidden gap-2 group-hover:flex">
                     <Link
                         href={href}
+                        onClick={(e) => e.stopPropagation()}
                         className="flex-1 rounded-xl bg-white/90 px-3 py-2 text-center text-sm font-medium text-black backdrop-blur hover:bg-white"
                     >
                         {primaryLabel}
                     </Link>
-                    <AddToProgressMenu anime={{
-                        anime_slug: anime.slug,
-                        title: anime.title,
-                        cover: anime.cover,
-                        rating: anime.rating,
-                        type: anime.type
-                    }}
-                    triggerLabel={secondaryLabel}
-                   triggerClassName="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
-                    />
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <AddToProgressMenu
+                            anime={{
+                                anime_slug: anime.slug,
+                                title: anime.title,
+                                cover: anime.cover,
+                                rating: anime.rating,
+                                type: anime.type,
+                            }}
+                            triggerLabel={secondaryLabel}
+                            triggerClassName="rounded-xl bg-black/70 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-black/80"
+                        />
+                    </div>
                 </div>
-            </div>
             </div>
         </div>
     );
