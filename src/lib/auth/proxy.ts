@@ -1,10 +1,10 @@
-import {NextRequest, NextResponse} from "next/server";
+import { NextResponse } from "next/server";
 import { ensureFreshAccessToken } from "@/lib/auth/ensure-access";
 import { getAuthFromCookies, setAuthCookies, clearAuthCookies } from "@/lib/auth/cookies";
 import { refreshWithBackend } from "@/lib/auth/refresh";
 
 // Copia Set-Cookie de una response intermedia (NextResponse.next()) a tu response final
-function mergeSetCookieHeaders(from: Response, to: NextResponse) {
+export function mergeSetCookieHeaders(from: Response, to: NextResponse) {
     const anyHeaders = from.headers as any;
     const list: string[] | undefined = anyHeaders.getSetCookie?.();
 
@@ -26,7 +26,7 @@ type RefreshResult =
     | { access_token: string; refresh_token: string; expires_in?: number | null }
     | "CLEAR";
 
-async function fetchUpstreamWith401Retry(makeRequest: (accessToken: string) => Promise<Response>) {
+export async function fetchUpstreamWith401Retry(makeRequest: (accessToken: string) => Promise<Response>) {
     // 1) proactivo por expiresAt
     const ensured = await ensureFreshAccessToken();
     const { refresh } = await getAuthFromCookies();
@@ -57,7 +57,7 @@ async function fetchUpstreamWith401Retry(makeRequest: (accessToken: string) => P
     return { upstream, ensuredResponse: ensured.response, refreshedTokens: null as RefreshResult };
 }
 
-function applyAuthCookiesToResponse(
+export function applyAuthCookiesToResponse(
     out: NextResponse,
     ensuredResponse: NextResponse | null,
     refreshedTokens: RefreshResult
@@ -71,31 +71,4 @@ function applyAuthCookiesToResponse(
     } else if (refreshedTokens === "CLEAR") {
         clearAuthCookies(out);
     }
-}
-
-const USER_API = process.env.EXTERNAL_USER_API_BASE!;
-
-export async function POST(req: NextRequest) {
-    const body = await req.json().catch(() => null);
-    if (!body) {
-        return NextResponse.json({ message: "Invalid body" }, { status: 400 });
-    }
-
-    const { upstream, ensuredResponse, refreshedTokens } = await fetchUpstreamWith401Retry((token) =>
-        fetch(`${USER_API}/anime/watched/delete`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(body),
-            cache: "no-store",
-        })
-    );
-
-    const json = await safeJson(upstream);
-    const out = NextResponse.json(json ?? { message: "Upstream error" }, { status: upstream.status });
-
-    applyAuthCookiesToResponse(out, ensuredResponse, refreshedTokens);
-    return out;
 }

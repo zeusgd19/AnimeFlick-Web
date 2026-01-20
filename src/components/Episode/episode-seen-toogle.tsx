@@ -5,52 +5,57 @@ import { useEffect, useState, useTransition } from "react";
 import {
     isEpisodeSeen,
     markEpisodeSeenRemote,
-    setEpisodeSeenLocal, unmarkEpisodeSeenRemote,
+    setEpisodeSeenLocal,
+    unmarkEpisodeSeenRemote,
 } from "@/lib/utils/episode";
 
-type Props = { slug: string };
+type Props = {
+    slug: string;
 
-export default function EpisodeSeenToggle({ slug }: Props) {
-    const [seen, setSeen] = useState(false);
+    // opcional: si lo pasas, el padre recibe cambios y puede pintar texto
+    onSeenChangeAction?: (seen: boolean) => void;
+
+    // opcional: modo controlado
+    seen?: boolean;
+};
+
+export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Props) {
+    const controlled = typeof seen === "boolean";
+    const [innerSeen, setInnerSeen] = useState(false);
     const [isPending, startTransition] = useTransition();
 
+    const currentSeen = controlled ? (seen as boolean) : innerSeen;
+
+    // init/sync desde localStorage al cambiar slug
     useEffect(() => {
-        setSeen(isEpisodeSeen(slug));
+        const initial = isEpisodeSeen(slug);
+        if (!controlled) setInnerSeen(initial);
+        onSeenChangeAction?.(initial);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [slug]);
 
+    function setSeenBoth(next: boolean) {
+        if (!controlled) setInnerSeen(next);
+        onSeenChangeAction?.(next);
+    }
+
     function onToggle() {
-        const next = !seen;
+        const next = !currentSeen;
 
         // optimistic local
-        setSeen(next);
+        setSeenBoth(next);
         setEpisodeSeenLocal(slug, next);
 
-        // si lo marca como visto -> persistimos en backend
-        if (next) {
-            startTransition(async () => {
-                try {
-                    await markEpisodeSeenRemote(slug);
-                } catch {
-                    // rollback si falla
-                    setSeen(false);
-                    setEpisodeSeenLocal(slug, false);
-                }
-            });
-        }
-        // si next === false
-        if (!next) {
-            startTransition(async () => {
-                try {
-                    await unmarkEpisodeSeenRemote(slug);
-                    setEpisodeSeenLocal(slug, false)
-                } catch {
-                    // rollback si falla
-                    setSeen(false);
-                    setEpisodeSeenLocal(slug, true);
-                }
-            });
-        }
-
+        startTransition(async () => {
+            try {
+                if (next) await markEpisodeSeenRemote(slug);
+                else await unmarkEpisodeSeenRemote(slug);
+            } catch {
+                // rollback
+                setSeenBoth(!next);
+                setEpisodeSeenLocal(slug, !next);
+            }
+        });
     }
 
     return (
@@ -60,14 +65,14 @@ export default function EpisodeSeenToggle({ slug }: Props) {
             disabled={isPending}
             className={[
                 "rounded-xl border p-2 transition",
-                seen
+                currentSeen
                     ? "bg-foreground text-background"
                     : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
                 isPending ? "opacity-70 cursor-not-allowed" : "",
             ].join(" ")}
-            title={seen ? "Marcado como visto" : "Marcar como visto"}
+            title={currentSeen ? "Marcado como visto" : "Marcar como visto"}
         >
-            {seen ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            {currentSeen ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
     );
 }

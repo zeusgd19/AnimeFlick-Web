@@ -142,7 +142,7 @@ export default function AnimeCard({ anime }: { anime: InputAnime }) {
 export function AnimeFavoriteCard({ anime }: { anime: FavoriteAnime }) {
     const router = useRouter();
 
-    const href = `/anime/${anime.slug}`;
+    const href = `/anime/${anime.anime_slug}`;
     const primaryLabel = "Detalles";
     const secondaryLabel = "+ Lista";
 
@@ -200,7 +200,7 @@ export function AnimeFavoriteCard({ anime }: { anime: FavoriteAnime }) {
                     <div onClick={(e) => e.stopPropagation()}>
                         <AddToProgressMenu
                             anime={{
-                                anime_slug: anime.slug,
+                                anime_slug: anime.anime_slug,
                                 title: anime.title,
                                 cover: anime.cover,
                                 rating: anime.rating,

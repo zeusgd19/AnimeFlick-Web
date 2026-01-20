@@ -7,6 +7,7 @@ import type { ServerEpisodeResponse } from "@/types/anime";
 import Footer from "@/components/Footer/footer";
 import EpisodeSeenToggle from "@/components/Episode/episode-seen-toogle";
 import EpisodePill from "@/components/Episode/episode-pill";
+import {EpisodeSeenRow} from "@/components/Episode/episode-seen-row";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -168,7 +169,7 @@ export default async function WatchPage({
                                         </div>
                                     </div>
 
-                                    <div className="mt-5 flex gap-2">
+                                    <div className="mt-5 flex gap-2 mb-5">
                                         <Link
                                             href={`/anime/${animeSlug!}`}
                                             className="flex-1 rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
@@ -182,6 +183,7 @@ export default async function WatchPage({
                                             Buscar
                                         </Link>
                                     </div>
+                                    <EpisodeSeenRow episodeSlug={episodeSlug}></EpisodeSeenRow>
                                 </div>
                             </aside>
                         </div>

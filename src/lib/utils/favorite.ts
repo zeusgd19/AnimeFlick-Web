@@ -1,5 +1,5 @@
 export type FavoriteAnime = {
-    slug: string;
+    anime_slug: string;
     title: string;
     cover: string;
     rating: string;
@@ -23,21 +23,21 @@ export function getFavoriteAnimes(): FavoriteAnime[] {
 }
 
 export function isFavorite(animeSlug: string): boolean {
-    return getFavoriteAnimes().some(a => a.slug === animeSlug);
+    return getFavoriteAnimes().some(a => a.anime_slug === animeSlug);
 }
 
 export function upsertFavoriteLocal(anime: FavoriteAnime): boolean {
     const current = getFavoriteAnimes();
     const map = new Map<string, FavoriteAnime>();
-    for (const a of current) map.set(a.slug, a);
-    map.set(anime.slug, anime);
+    for (const a of current) map.set(a.anime_slug, a);
+    map.set(anime.anime_slug, anime);
     localStorage.setItem(KEY, JSON.stringify(Array.from(map.values())));
     return true;
 }
 
 export function removeFavoriteLocal(animeSlug: string): boolean {
     const current = getFavoriteAnimes();
-    const updated = current.filter(a => a.slug !== animeSlug);
+    const updated = current.filter(a => a.anime_slug !== animeSlug);
     localStorage.setItem(KEY, JSON.stringify(updated));
     return false;
 }
@@ -49,10 +49,10 @@ export function mergeFavoriteAnimes(animes: FavoriteAnime[]) {
     const map = new Map<string, FavoriteAnime>();
 
     console.log(animes)
-    for (const a of current) map.set(a.slug, a);
+    for (const a of current) map.set(a.anime_slug, a);
     for (const a of animes) {
-        if (!a?.slug) continue;
-        map.set(a.slug, a);
+        if (!a?.anime_slug) continue;
+        map.set(a.anime_slug, a);
     }
 
     localStorage.setItem(KEY, JSON.stringify(Array.from(map.values())));

@@ -24,9 +24,9 @@ export default function AddToFavorite({ anime }: { anime: FavoriteAnime }) {
     useEffect(() => {
         (async () => {
             await ensureFavoritesSynced(false);
-            setFav(isFavorite(anime.slug));
+            setFav(isFavorite(anime.anime_slug));
         })();
-    }, [anime.slug]);
+    }, [anime.anime_slug]);
 
     async function onToggle() {
         if (busy) return;
@@ -36,18 +36,18 @@ export default function AddToFavorite({ anime }: { anime: FavoriteAnime }) {
 
         // ✅ Optimista en local
         if (next) upsertFavoriteLocal(anime);
-        else removeFavoriteLocal(anime.slug);
+        else removeFavoriteLocal(anime.anime_slug);
 
         setFav(next);
 
         try {
             const res = next
                 ? await addFavoriteRemote(anime)
-                : await removeFavoriteRemote(anime.slug);
+                : await removeFavoriteRemote(anime.anime_slug);
 
             if (res.status === 401) {
                 // rollback local
-                if (next) removeFavoriteLocal(anime.slug);
+                if (next) removeFavoriteLocal(anime.anime_slug);
                 else upsertFavoriteLocal(anime);
                 setFav(!next);
 
@@ -57,13 +57,13 @@ export default function AddToFavorite({ anime }: { anime: FavoriteAnime }) {
 
             if (!res.ok) {
                 // rollback local
-                if (next) removeFavoriteLocal(anime.slug);
+                if (next) removeFavoriteLocal(anime.anime_slug);
                 else upsertFavoriteLocal(anime);
                 setFav(!next);
             }
         } catch {
             // rollback local
-            if (next) removeFavoriteLocal(anime.slug);
+            if (next) removeFavoriteLocal(anime.anime_slug);
             else upsertFavoriteLocal(anime);
             setFav(!next);
         } finally {

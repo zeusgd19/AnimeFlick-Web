@@ -147,7 +147,7 @@ export default async function AnimeDetailPage({
                                 />
 
                                 <AddToFavorite anime={{
-                                    slug: slug,
+                                    anime_slug: slug,
                                     title: anime.title,
                                     cover: anime.cover,
                                     rating: anime.rating,
