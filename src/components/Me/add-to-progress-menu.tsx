@@ -67,16 +67,16 @@ export default function AddToProgressMenu({
         return DEFAULT_LISTS.filter((x) => x.status !== "none");
     }, [showRemove]);
 
-    const triggerBase =
-        variant === "primary"
-            ? "rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-            : variant === "ghost"
-                ? "rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                : "rounded-xl border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent";
-
     async function add(status: ProgressStatus) {
         setBusy(status);
         setMsg(null);
+
+        const payloadToRemove = { ...anime, status: "none" };
+        await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payloadToRemove),
+        });
 
         const payload = { ...anime, status };
 
