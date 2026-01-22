@@ -82,6 +82,12 @@ const isStatus = (v: any): v is ProgressStatus => allowed.includes(v);
 export async function POST(req: Request) {
     const body = (await req.json()) as Partial<ProgressBody>;
 
+    console.log(body);
+    console.log(typeof body.anime_slug);
+    console.log(typeof body.title);
+    console.log(typeof body.cover);
+    console.log(typeof body.rating);
+    console.log(typeof body.type);
     if (
         !body ||
         typeof body.anime_slug !== "string" ||

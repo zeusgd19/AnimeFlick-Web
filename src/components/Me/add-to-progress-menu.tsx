@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-export type ProgressStatus = "viendo" | "completado" | "en_pausa" | "ninguno";
+export type ProgressStatus = "watching" | "completed" | "paused" | "none";
 type Variant = "primary" | "ghost" | "compact";
 
 const DEFAULT_LISTS: {
@@ -12,10 +12,10 @@ const DEFAULT_LISTS: {
     desc: string;
     icon: string;
 }[] = [
-    { status: "viendo", label: "Siguiendo", desc: "Lo estás viendo ahora", icon: "▶" },
-    { status: "en_pausa", label: "En pausa", desc: "Lo retomas más tarde", icon: "⏸" },
-    { status: "completado", label: "Completado", desc: "Ya lo terminaste", icon: "✓" },
-    { status: "ninguno", label: "Quitar", desc: "Eliminar de tu lista", icon: "✕" },
+    { status: "watching", label: "Siguiendo", desc: "Lo estás viendo ahora", icon: "▶" },
+    { status: "paused", label: "En pausa", desc: "Lo retomas más tarde", icon: "⏸" },
+    { status: "completed", label: "Completado", desc: "Ya lo terminaste", icon: "✓" },
+    { status: "none", label: "Quitar", desc: "Eliminar de tu lista", icon: "✕" },
 ];
 
 export default function AddToProgressMenu({
@@ -64,7 +64,7 @@ export default function AddToProgressMenu({
 
     const lists = useMemo(() => {
         if (showRemove) return DEFAULT_LISTS;
-        return DEFAULT_LISTS.filter((x) => x.status !== "ninguno");
+        return DEFAULT_LISTS.filter((x) => x.status !== "none");
     }, [showRemove]);
 
     const triggerBase =
