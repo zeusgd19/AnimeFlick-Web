@@ -118,15 +118,6 @@ export default function LoginForm() {
           o continúa con
         </span>
             </div>
-
-            <button
-                type="button"
-                className="h-11 rounded-2xl border bg-card px-4 text-sm font-medium hover:bg-accent"
-                title="Demo"
-            >
-                Continuar con Google
-            </button>
-
             <p className="pt-2 text-sm text-muted-foreground">
                 ¿No tienes cuenta?{" "}
                 <Link href="/register" className="font-medium text-foreground hover:underline">
