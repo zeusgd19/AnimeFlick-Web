@@ -111,13 +111,6 @@ export default function LoginForm() {
             >
                 {loading ? "Entrando..." : "Entrar"}
             </button>
-
-            <div className="relative py-2">
-                <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-                <span className="relative mx-auto block w-fit bg-card px-3 text-xs text-muted-foreground">
-          o continúa con
-        </span>
-            </div>
             <p className="pt-2 text-sm text-muted-foreground">
                 ¿No tienes cuenta?{" "}
                 <Link href="/register" className="font-medium text-foreground hover:underline">

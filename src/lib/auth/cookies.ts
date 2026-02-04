@@ -25,23 +25,38 @@ export function isExpired(expiresAtMs: number, skewMs = 30_000) {
 }
 
 export function setAuthCookies(res: NextResponse, tokens: AuthTokens) {
+    const isProd = process.env.NODE_ENV === "production";
+
+    const accessMaxAge =
+        tokens.expires_in && tokens.expires_in > 0 ? Math.floor(tokens.expires_in) : 60 * 60; // 1h fallback
+
+    const refreshMaxAge = 60 * 60 * 24 * 30; // 30 días
+
     const expiresAt =
-        tokens.expires_in && tokens.expires_in > 0
-            ? Date.now() + tokens.expires_in * 1000
-            : Date.now() + 55 * 60 * 1000; // fallback ~55min
+        Date.now() + accessMaxAge * 1000;
 
     const common = {
         httpOnly: true,
         sameSite: "lax" as const,
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: isProd,
     };
 
-    res.cookies.set(ACCESS_COOKIE, tokens.access_token, common);
-    res.cookies.set(REFRESH_COOKIE, tokens.refresh_token, common);
+    // ✅ PERSISTENTES (ya no "Session")
+    res.cookies.set(ACCESS_COOKIE, tokens.access_token, {
+        ...common,
+        maxAge: accessMaxAge,
+    });
+
+    res.cookies.set(REFRESH_COOKIE, tokens.refresh_token, {
+        ...common,
+        maxAge: refreshMaxAge,
+    });
+
     res.cookies.set(EXPIRES_AT_COOKIE, String(expiresAt), {
         ...common,
-        httpOnly: false, // opcional: si quieres leer expiresAt en client; si no, pon true
+        httpOnly: false, // si lo quieres leer en client
+        maxAge: refreshMaxAge, // o accessMaxAge si prefieres
     });
 
     return res;

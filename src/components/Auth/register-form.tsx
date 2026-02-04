@@ -138,13 +138,6 @@ export default function RegisterForm() {
             >
                 {loading ? "Creando..." : "Crear cuenta"}
             </button>
-
-            <div className="relative py-2">
-                <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-                <span className="relative mx-auto block w-fit bg-card px-3 text-xs text-muted-foreground">
-          o regístrate con
-        </span>
-            </div>
             <p className="pt-2 text-sm text-muted-foreground">
                 ¿Ya tienes cuenta?{" "}
                 <Link href="/login" className="font-medium text-foreground hover:underline">
