@@ -122,6 +122,31 @@ async function syncFavoritesFromServer() {
     }
 }
 
+type RemoteFavoritesResult = {
+    status: number;
+    favorites: FavoriteAnime[];
+};
+
+async function fetchRemoteFavorites(): Promise<RemoteFavoritesResult> {
+    try {
+        const res = await fetch("/api/favorite", {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include",
+        });
+
+        const payload = await res.json().catch(() => null);
+        const rawList = extractFavoritesPayload(payload);
+        const normalized = rawList
+            .map(normalizeFavorite)
+            .filter((x): x is FavoriteAnime => Boolean(x));
+
+        return { status: res.status, favorites: normalized };
+    } catch {
+        return { status: 0, favorites: [] };
+    }
+}
+
 let syncPromise: Promise<void> | null = null;
 
 export function ensureFavoritesSynced(force = false) {
@@ -136,6 +161,30 @@ export function ensureFavoritesSynced(force = false) {
 
     return syncPromise ?? Promise.resolve();
 }
+
+// ---------- Local -> Server sync ----------
+/*
+export async function syncLocalFavoritesToRemote() {
+    if (typeof window === "undefined") return;
+
+    const local = getFavoriteAnimes();
+    if (local.length === 0) return;
+
+    const remote = await fetchRemoteFavorites();
+    if (remote.status === 401 || remote.status === 0) return;
+
+    const remoteSet = new Set(remote.favorites.map((f) => f.anime_slug));
+    const missing = local.filter((f) => !remoteSet.has(f.anime_slug));
+
+    for (const fav of missing) {
+        try {
+            await addFavoriteRemote(fav);
+        } catch {
+            // no rompas UI
+        }
+    }
+}
+*/
 
 // ---------- Remote add/remove ----------
 export async function addFavoriteRemote(anime: FavoriteAnime) {

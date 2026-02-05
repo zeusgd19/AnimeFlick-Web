@@ -93,6 +93,18 @@ export default async function MePage() {
                                     justo después del login.
                                 </p>
                             </div>
+                            <div className="rounded-2xl border bg-card p-4 sm:col-span-2">
+                                <p className="text-sm font-semibold">Favoritos sin cuenta</p>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Puedes ver tus favoritos guardados en local aunque no hayas iniciado sesión.
+                                </p>
+                                <Link
+                                    href="/me/favorites"
+                                    className="mt-3 inline-flex rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+                                >
+                                    Ver Favoritos →
+                                </Link>
+                            </div>
                         </div>
                     </section>
                     <Footer />

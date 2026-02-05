@@ -1,11 +1,10 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useAuth } from "@/context/auth-context";
 import {
-    isEpisodeSeen,
     markEpisodeSeenRemote,
-    setEpisodeSeenLocal,
     unmarkEpisodeSeenRemote,
 } from "@/lib/utils/episode";
 
@@ -20,19 +19,12 @@ type Props = {
 };
 
 export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Props) {
+    const { user } = useAuth();
     const controlled = typeof seen === "boolean";
     const [innerSeen, setInnerSeen] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const currentSeen = controlled ? (seen as boolean) : innerSeen;
-
-    // init/sync desde localStorage al cambiar slug
-    useEffect(() => {
-        const initial = isEpisodeSeen(slug);
-        if (!controlled) setInnerSeen(initial);
-        onSeenChangeAction?.(initial);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [slug]);
 
     function setSeenBoth(next: boolean) {
         if (!controlled) setInnerSeen(next);
@@ -42,18 +34,21 @@ export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Pr
     function onToggle() {
         const next = !currentSeen;
 
-        // optimistic local
+        // optimistic UI
         setSeenBoth(next);
-        setEpisodeSeenLocal(slug, next);
+        if (!user) return;
 
         startTransition(async () => {
             try {
-                if (next) await markEpisodeSeenRemote(slug);
-                else await unmarkEpisodeSeenRemote(slug);
+                const res = next
+                    ? await markEpisodeSeenRemote(slug)
+                    : await unmarkEpisodeSeenRemote(slug);
+
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error("Failed to mark watched");
             } catch {
                 // rollback
                 setSeenBoth(!next);
-                setEpisodeSeenLocal(slug, !next);
             }
         });
     }
@@ -62,15 +57,21 @@ export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Pr
         <button
             type="button"
             onClick={onToggle}
-            disabled={isPending}
+            disabled={isPending || !user}
             className={[
                 "rounded-xl border p-2 transition",
                 currentSeen
                     ? "bg-foreground text-background"
                     : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
-                isPending ? "opacity-70 cursor-not-allowed" : "",
+                isPending || !user ? "opacity-70 cursor-not-allowed" : "",
             ].join(" ")}
-            title={currentSeen ? "Marcado como visto" : "Marcar como visto"}
+            title={
+                !user
+                    ? "Inicia sesión para marcar como visto"
+                    : currentSeen
+                    ? "Marcado como visto"
+                    : "Marcar como visto"
+            }
         >
             {currentSeen ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>

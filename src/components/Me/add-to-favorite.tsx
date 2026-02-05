@@ -1,8 +1,8 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/auth-context";
 import {
     addFavoriteRemote,
     ensureFavoritesSynced,
@@ -14,9 +14,7 @@ import {
 } from "@/lib/utils/favorite";
 
 export default function AddToFavorite({ anime }: { anime: FavoriteAnime }) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const nextUrl = useMemo(() => encodeURIComponent(pathname), [pathname]);
+    const { user } = useAuth();
 
     const [fav, setFav] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -40,20 +38,17 @@ export default function AddToFavorite({ anime }: { anime: FavoriteAnime }) {
 
         setFav(next);
 
+        if (!user) {
+            setBusy(false);
+            return;
+        }
+
         try {
             const res = next
                 ? await addFavoriteRemote(anime)
                 : await removeFavoriteRemote(anime.anime_slug);
 
-            if (res.status === 401) {
-                // rollback local
-                if (next) removeFavoriteLocal(anime.anime_slug);
-                else upsertFavoriteLocal(anime);
-                setFav(!next);
-
-                router.push(`/login?next=${nextUrl}`);
-                return;
-            }
+            if (res.status === 401) return;
 
             if (!res.ok) {
                 // rollback local
