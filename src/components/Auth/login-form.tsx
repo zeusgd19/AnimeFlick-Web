@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {useAuth} from "@/context/auth-context";
 import { ensureFavoritesSynced } from "@/lib/utils/favorite";
+import { primeWatchedEpisodes } from "@/lib/watched/prime-watched";
 
 export default function LoginForm() {
     const router = useRouter();
@@ -48,6 +49,7 @@ export default function LoginForm() {
 
             const json = await res.json();
             setUser(json.user);
+            await primeWatchedEpisodes();
             await ensureFavoritesSynced(true);
             router.push(next);
             router.refresh(); // para que layouts/server components pillen cookies nuevas
