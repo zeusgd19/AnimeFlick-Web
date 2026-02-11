@@ -84,13 +84,6 @@ export default function LoginPage() {
                                 <li className="rounded-2xl border bg-card p-3">✓ Reanudar donde lo dejaste</li>
                             </ul>
                         </section>
-
-                        <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                            <h3 className="text-sm font-semibold">Tip</h3>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Cuando implementes auth, aquí puedes mostrar “Último visto” o un mini resumen del perfil.
-                            </p>
-                        </section>
                     </aside>
                 </div>
 

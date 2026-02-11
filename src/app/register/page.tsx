@@ -110,13 +110,6 @@ export default function RegisterPage() {
                                 <li className="rounded-2xl border bg-card p-3">✓ Sincronización entre dispositivos</li>
                             </ul>
                         </section>
-
-                        <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                            <h3 className="text-sm font-semibold">Nota</h3>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Cuando implementes auth, puedes añadir captcha, validación y “password strength” aquí.
-                            </p>
-                        </section>
                     </aside>
                 </div>
 
