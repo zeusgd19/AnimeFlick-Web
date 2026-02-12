@@ -56,7 +56,7 @@ export default function RegisterForm() {
             });
 
             if(signUpResponse.ok) {
-                router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+                router.push(`/login`);
             }
         } catch (err: any) {
             setError(err?.message ?? "Error inesperado");

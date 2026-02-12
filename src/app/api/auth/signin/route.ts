@@ -10,8 +10,10 @@ export async function POST(req: Request) {
         body: JSON.stringify(body),
         cache: "no-store",
     });
-
+    console.log(r)
     const data: SignInResponse = await r.json();
+
+
     if (!r.ok || !data.access_token || !data.user) {
         return NextResponse.json(
             { success: false, message: data?.status ?? "Invalid credentials" },

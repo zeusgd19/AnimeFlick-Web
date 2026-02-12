@@ -8,6 +8,8 @@ export async function POST(req: Request) {
         // Llama a tu provider (esto ocurre en servidor => sí puede leer env)
         const data = await SignUpUser(body);
 
+        console.log(data);
+
         return NextResponse.json(data, { status: 200 });
     } catch (err: any) {
         return NextResponse.json(
