@@ -110,7 +110,7 @@ export async function markEpisodeSeenRemote(episodeSlug: string) {
     });
 
     if (!res.ok) throw new Error("Failed to mark watched");
-    return res.json();
+    return res;
 }
 
 export async function unmarkEpisodeSeenRemote(episodeSlug: string) {
@@ -127,5 +127,5 @@ export async function unmarkEpisodeSeenRemote(episodeSlug: string) {
     });
 
     if (!res.ok) throw new Error("Failed to mark watched");
-    return res.json();
+    return res;
 }
