@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Header from "@/components/Header/header";
-import WatchPlayer from "@/components/Watch/watch-player";
 import { fetchServersEpisode } from "@/lib/providers/anime";
 import { parseEpisodeSlug } from "@/lib/utils/episode";
 import type { ServerEpisodeResponse } from "@/types/anime";
@@ -8,6 +7,7 @@ import Footer from "@/components/Footer/footer";
 import EpisodeSeenToggle from "@/components/Episode/episode-seen-toogle";
 import EpisodePill from "@/components/Episode/episode-pill";
 import {EpisodeSeenRow} from "@/components/Episode/episode-seen-row";
+import WatchPlayer from "@/components/Watch/watch-player";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
