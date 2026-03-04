@@ -1,38 +1,63 @@
 import { chromium } from "playwright";
+import type { ExtractResult } from "@/app/api/extract/route";
 
-export async function extractWithPlaywright(url: string): Promise<{ link: string; headers: Record<string,string> } | null> {
+export async function extractStreamWishWithPlaywright(
+    inputUrl: string
+): Promise<ExtractResult> {
     const browser = await chromium.launch({
         headless: true,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     try {
-        const page = await browser.newPage({
+        const context = await browser.newContext({
             userAgent:
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
             locale: "es-ES",
+            viewport: { width: 1280, height: 720 },
         });
+
+        const page = await context.newPage();
 
         let found: string | null = null;
 
         const capture = (u: string) => {
-            if (!found && u.includes(".m3u8")) found = u;
+            if (found !== null) return;
+            if (u.includes(".m3u8")) {
+                found = u;
+                console.log("[SW] found:", u);
+            }
         };
 
         page.on("request", (r) => capture(r.url()));
         page.on("response", (r) => capture(r.url()));
 
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+        await page.goto(inputUrl, {
+            waitUntil: "domcontentloaded",
+            timeout: 45_000,
+        });
 
-        // espera a que el player dispare requests
+        // intenta esperar a que el player arranque (no siempre existe selector)
+        await page.waitForTimeout(1500);
+
         const start = Date.now();
-        while (!found && Date.now() - start < 12_000) {
-            await page.waitForTimeout(250);
+        while (found === null && Date.now() - start < 12_000) {
+            await page.waitForTimeout(300);
         }
 
-        if (!found) return null;
+        if (found === null) return null;
 
-        return { link: found, headers: {} };
+        // ✅ aquí arregla el type issue
+        const foundUrl: string = found;
+
+        const kind: "hls" | "mp4" = foundUrl.includes(".m3u8") ? "hls" : "mp4";
+
+        return {
+            provider: "streamwish",
+            kind,
+            url: foundUrl,
+            headers: {},
+        };
     } finally {
         await browser.close();
     }

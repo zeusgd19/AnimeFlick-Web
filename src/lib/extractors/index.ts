@@ -1,6 +1,7 @@
 import type { ExtractResult } from "@/app/api/extract/route";
 import { extractStreamWishVideo } from "@/lib/streamwish-extractor";
 import { extractStapeWithPlaywright } from "./stape-playwright";
+import {extractStreamWishWithPlaywright} from "@/lib/streamwish-playwright";
 
 function hostOf(u: string) {
     try {
@@ -20,8 +21,8 @@ export async function extractByProvider(inputUrl: string): Promise<ExtractResult
 
     // ✅ Streamwish (tu extractor actual)
     if (host.includes("streamwish")) {
-        const r = await extractStreamWishVideo(inputUrl);
-        if (r?.link) return wrap("streamwish", r.link, r.headers);
+        const r = await extractStreamWishWithPlaywright(inputUrl);
+        if (r?.url) return wrap("streamwish", r.url, r.headers);
         return null;
     }
 
@@ -31,7 +32,7 @@ export async function extractByProvider(inputUrl: string): Promise<ExtractResult
         host.includes("stape") ||
         host.includes("streamta") // por si hay variaciones raras
     ) {
-        const r = await extractStapeWithPlaywright(inputUrl);
+        const r = await extractStapeWithPlaywright(inputUrl, { minMinutes: 2 });
         if (r?.url) return r;
         return null;
     }

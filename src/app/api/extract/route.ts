@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractByProvider } from "@/lib/extractors";
 import { extractWithPlaywrightCapture } from "@/lib/extractors/playwright-capture";
+import {detectProvider} from "@/lib/extractors/provider";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,29 +16,43 @@ export type ExtractResult =
 }
     | null;
 
+
 export async function POST(req: Request) {
     try {
-        const body = (await req.json()) as { url?: string };
-        const url = body?.url?.trim();
-
+        const { url } = (await req.json()) as { url?: string };
         if (!url) {
             return NextResponse.json({ ok: false, error: "Missing url" }, { status: 400 });
         }
 
-        // 1) intentamos extractor específico (ligero / o playwright específico)
-        let result: ExtractResult = await extractByProvider(url);
+        const provider = detectProvider(url);
 
-        // 2) fallback universal: captura por red (m3u8 o mp4)
+        // ✅ 1) Provider conocido => NO fallback genérico (evita anuncios)
+        if (provider !== "unknown") {
+            const result = await extractByProvider(url);
+            console.log(result)
+            if (!result) {
+                return NextResponse.json(
+                    { ok: false, error: "Vídeo no encontrado o eliminado (o detectado como anuncio)" },
+                    { status: 404 }
+                );
+            }
+            return NextResponse.json({ ok: true, result }, { status: 200 });
+        }
+
+        // ✅ 2) Unknown => fallback genérico
+        let result = await extractByProvider(url);
+        if (!result) result = await extractWithPlaywrightCapture(url);
+
         if (!result) {
-            result = await extractWithPlaywrightCapture(url);
+            return NextResponse.json(
+                { ok: false, error: "Vídeo no encontrado o eliminado" },
+                { status: 404 }
+            );
         }
 
         return NextResponse.json({ ok: true, result }, { status: 200 });
     } catch (e: any) {
-        console.error("[/api/extract] error:", e?.message ?? e);
-        return NextResponse.json(
-            { ok: false, error: e?.message ?? "Server error" },
-            { status: 500 }
-        );
+        console.error(e);
+        return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
     }
 }

@@ -47,8 +47,12 @@ async function getExtract(embed?: string) {
         body: JSON.stringify({ url: embed }),
     });
 
-    if (!res.ok) throw new Error(`extract failed: ${res.status}`);
-    return (await res.json()) as { ok: boolean; result: ExtractResultClient };
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        throw new Error(json?.error ?? `extract failed: ${res.status}`);
+    }
+    return json as { ok: true; result: any };
 }
 
 export default function WatchPlayer({
