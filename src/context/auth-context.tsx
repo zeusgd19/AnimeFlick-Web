@@ -22,6 +22,7 @@ export function AuthProvider({
 
     async function logout() {
         await fetch("/api/auth/logout", { method: "POST" });
+        localStorage.clear();
         setUser(null);
     }
 
