@@ -40,8 +40,15 @@ export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Pr
             // No sync global, se hace per anime page
         })();
 
+        // Listen for watched updates
+        function handleWatchedUpdate() {
+            if (alive && !controlled) setInnerSeen(isEpisodeSeen(slug));
+        }
+        window.addEventListener('watchedUpdated', handleWatchedUpdate);
+
         return () => {
             alive = false;
+            window.removeEventListener('watchedUpdated', handleWatchedUpdate);
         };
     }, [slug, user, controlled]);
 

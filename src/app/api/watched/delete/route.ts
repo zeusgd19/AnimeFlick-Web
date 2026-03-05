@@ -82,8 +82,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { upstream, ensuredResponse, refreshedTokens } = await fetchUpstreamWith401Retry((token) =>
-        fetch(`${USER_API}/anime/watched/delete`, {
-            method: "POST",
+        fetch(`${USER_API}/anime/watched`, {
+            method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,

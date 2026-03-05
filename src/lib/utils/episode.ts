@@ -129,3 +129,16 @@ export async function unmarkEpisodeSeenRemote(episodeSlug: string) {
     if (!res.ok) throw new Error("Failed to mark watched");
     return res;
 }
+
+export function removeEpisodesFromLocal(episodes: string[]) {
+    const key = "seen-episodes";
+    const stored = localStorage.getItem(key);
+    if (!stored) return;
+
+    const seen = new Set(JSON.parse(stored));
+    episodes.forEach(ep => seen.delete(ep));
+    localStorage.setItem(key, JSON.stringify([...seen]));
+
+    // Trigger UI update
+    window.dispatchEvent(new CustomEvent('watchedUpdated'));
+}

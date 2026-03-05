@@ -22,6 +22,8 @@ export default function FetchWatchedEpisodes({ slug }: Props) {
                     data?.episodes?.map((x: any) => x?.episode_slug ?? x?.slug ?? x).filter(Boolean) || [];
                 console.log("Extracted slugs:", slugs);
                 mergeSeenEpisodes(slugs);
+                // Trigger UI update
+                window.dispatchEvent(new CustomEvent('watchedUpdated'));
             })
             .catch((err) => console.error("Error fetching watched episodes:", err));
     }, [slug, user]);
