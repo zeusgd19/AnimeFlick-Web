@@ -26,7 +26,7 @@ function parsePage(v: unknown) {
 export default async function AllPage({
                                           searchParams,
                                       }: {
-    searchParams?: Promise<{ page?: string | string[] }> | { page?: string | string[] };
+    searchParams: Promise<{ page?: string | string[] }>;
 }) {
     const user = await getCurrentUser();
 
