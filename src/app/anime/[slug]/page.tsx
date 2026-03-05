@@ -7,6 +7,7 @@ import Footer from "@/components/Footer/footer";
 import EpisodePill from "@/components/Episode/episode-pill";
 import AddToProgressMenu from "@/components/Me/add-to-progress-menu";
 import AddToFavorite from "@/components/Me/add-to-favorite";
+import FetchWatchedEpisodes from "@/components/Episode/FetchWatchedEpisodes";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -209,6 +210,9 @@ export default async function AnimeDetailPage({
                                 </div>
                             ) : null}
                         </section>
+
+                        {/* Fetch watched episodes */}
+                        <FetchWatchedEpisodes slug={slug} />
 
                         {/* Episodes card with internal scroll */}
                         <section className="rounded-3xl border bg-card p-6 shadow-sm">

@@ -29,6 +29,9 @@ export default async function RootLayout({
     const user = await getCurrentUser();
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

@@ -4,7 +4,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useAuth } from "@/context/auth-context";
 import {
-    ensureSeenEpisodesSynced,
     isEpisodeSeen,
     setEpisodeSeenLocal,
     markEpisodeSeenRemote,
@@ -30,7 +29,7 @@ export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Pr
         onSeenChangeAction?.(next);
     }
 
-    // ✅ inicializa desde localStorage + sync server
+    // ✅ inicializa desde localStorage
     useEffect(() => {
         let alive = true;
 
@@ -38,12 +37,7 @@ export default function EpisodeSeenToggle({ slug, onSeenChangeAction, seen }: Pr
             // si no hay user, aun así puedes pintar lo que haya en local
             if (!controlled) setInnerSeen(isEpisodeSeen(slug));
 
-            // si hay user, intenta sync una vez para traer vistos del server
-            if (user) {
-                await ensureSeenEpisodesSynced();
-                if (!alive) return;
-                if (!controlled) setInnerSeen(isEpisodeSeen(slug));
-            }
+            // No sync global, se hace per anime page
         })();
 
         return () => {
