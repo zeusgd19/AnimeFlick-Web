@@ -46,9 +46,9 @@ function ErrorState({ title, subtitle }: { title: string; subtitle?: string }) {
 export default async function CompletedPage({
                                                 searchParams,
                                             }: {
-    searchParams?: Promise<{ page?: string }> | { page?: string };
+    searchParams: Promise<{ page?: string }>;
 }) {
-    const sp = searchParams instanceof Promise ? await searchParams : searchParams;
+    const sp = await searchParams;
     const rawPage = sp?.page;
     const page = Math.max(1, Number(rawPage ?? 1));
 

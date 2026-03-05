@@ -134,10 +134,10 @@ type OnAirResponse = {
 export default async function HomePage({
                                            searchParams,
                                        }: {
-    searchParams?: Promise<{ type?: RealAnimeType; page?: number | string }> | { type?: RealAnimeType; page?: number | string };
+    searchParams: Promise<{ type?: RealAnimeType; page?: number | string }>;
 }) {
-    // ✅ Next 15: searchParams puede ser Promise
-    const res = searchParams instanceof Promise ? await searchParams : searchParams;
+    // ✅ Next 15: searchParams es Promise
+    const res = await searchParams;
 
     const type = res?.type;
     const rawPage = res?.page;

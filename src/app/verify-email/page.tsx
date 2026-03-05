@@ -13,9 +13,9 @@ function Badge({ children }: { children: React.ReactNode }) {
 export default async function VerifyEmailPage({
                                                   searchParams,
                                               }: {
-    searchParams?: Promise<{ email?: string }> | { email?: string };
+    searchParams: Promise<{ email?: string }>;
 }) {
-    const sp = searchParams instanceof Promise ? await searchParams : searchParams;
+    const sp = await searchParams;
     const email = sp?.email ?? "";
 
     return (
