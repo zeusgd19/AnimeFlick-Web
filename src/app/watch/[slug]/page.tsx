@@ -45,9 +45,9 @@ function ErrorState({ slug }: { slug: string }) {
 export default async function WatchPage({
                                             params,
                                         }: {
-    params: Promise<{ slug: string }> | { slug: string };
+    params: Promise<{ slug: string }>;
 }) {
-    const p = params instanceof Promise ? await params : params;
+    const p = await params;
     const episodeSlug = p.slug;
 
     // Parse
