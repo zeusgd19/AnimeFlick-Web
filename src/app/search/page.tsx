@@ -18,7 +18,7 @@ const toArray = (v: string | string[] | undefined): string[] =>
 export default async function SearchPage({
                                              searchParams,
                                          }: {
-    searchParams?: Promise<SearchParams>;
+    searchParams: Promise<SearchParams>;
 }) {
     const sp = (await searchParams) ?? {};
 
