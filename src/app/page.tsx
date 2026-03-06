@@ -19,6 +19,7 @@ import QuickFilters from "@/components/Filters/quick-filters";
 import { Pagination } from "@/components/Pagination/pagination";
 import AnimeCard from "@/components/AnimeCard/anime-card";
 import Footer from "@/components/Footer/footer";
+import Hero from "@/components/Home/Hero";
 
 const genres = [
     {key: "accion", label: "Acción"},
@@ -172,61 +173,7 @@ export default async function HomePage({
 
             <main className="mx-auto max-w-6xl px-4 py-6">
                 {/* Hero */}
-                <section className="relative overflow-hidden rounded-3xl border bg-card">
-                    <div className="absolute inset-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={"/hero.jpg"} // pon un asset real en /public o quita esto
-                            alt={"AnimeFlick"}
-                            className="h-full w-full object-cover blur-[1px] opacity-25"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/30" />
-                    </div>
-
-                    <div className="relative grid gap-6 p-6 md:grid-cols-[1.2fr_0.8fr] md:p-10">
-                        <div className="flex flex-col justify-center">
-                            <div className="mb-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
-                  Destacado
-                </span>
-                                <span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-                  Trending
-                </span>
-                            </div>
-
-                            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">AnimeFlick</h1>
-                            <p className="mt-3 max-w-prose text-sm text-muted-foreground">
-                                Descubre lo más visto, sigue tu progreso y guarda tus animes en listas.
-                            </p>
-
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                <Link
-                                    href={`/search`}
-                                    className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                                >
-                                    Explorar
-                                </Link>
-                                <Link
-                                    href={`/login`}
-                                    className="rounded-2xl border px-4 py-2 text-sm font-medium hover:bg-accent"
-                                >
-                                    Entrar
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div className="mx-auto w-full max-w-[260px] md:mx-0 md:ml-auto">
-                            {/* Si tienes data suficiente, enseña una card; si no, un placeholder simple */}
-                            {animes[1] ? (
-                                <AnimeCard anime={animes[1]} />
-                            ) : (
-                                <div className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground">
-                                    Sin destacado disponible ahora.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </section>
+                <Hero animes={animes} />
 
                 {/* Quick filters */}
                 <QuickFilters active={type} />
