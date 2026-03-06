@@ -209,3 +209,21 @@ export async function syncLocalFavoritesToRemote() {
         localStorage.setItem(SYNC_KEY, String(Date.now()));
     }
 }
+
+export async function addFavoriteRemote(anime: FavoriteAnime) {
+    return await fetch("/api/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(anime),
+    });
+}
+
+export async function removeFavoriteRemote(animeSlug: string) {
+    return await fetch("/api/favorite/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ anime_slug: animeSlug }),
+    });
+}
