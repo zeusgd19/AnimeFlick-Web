@@ -48,6 +48,9 @@ export function mergeSeenEpisodes(slugs: string[]) {
     const merged = Array.from(new Set([...current, ...slugs]));
     localStorage.setItem(KEY, JSON.stringify(merged));
     localStorage.setItem(SYNC_KEY, String(Date.now()));
+
+    // Trigger UI update
+    window.dispatchEvent(new CustomEvent('watchedUpdated'));
 }
 
 // ------- Server sync -------
@@ -131,13 +134,12 @@ export async function unmarkEpisodeSeenRemote(episodeSlug: string) {
 }
 
 export function removeEpisodesFromLocal(episodes: string[]) {
-    const key = "seen-episodes";
-    const stored = localStorage.getItem(key);
+    const stored = localStorage.getItem(KEY);
     if (!stored) return;
 
     const seen = new Set(JSON.parse(stored));
     episodes.forEach(ep => seen.delete(ep));
-    localStorage.setItem(key, JSON.stringify([...seen]));
+    localStorage.setItem(KEY, JSON.stringify([...seen]));
 
     // Trigger UI update
     window.dispatchEvent(new CustomEvent('watchedUpdated'));

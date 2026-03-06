@@ -4,10 +4,10 @@ import Header from "@/components/Header/header";
 import { fetchAnimeBySlug, fetchBannerFromAniListByTitle } from "@/lib/providers/anime";
 import type { AnimeResponse, Episode, RelatedAnime } from "@/types/anime";
 import Footer from "@/components/Footer/footer";
-import EpisodePill from "@/components/Episode/episode-pill";
 import AddToProgressMenu from "@/components/Me/add-to-progress-menu";
 import AddToFavorite from "@/components/Me/add-to-favorite";
 import FetchWatchedEpisodes from "@/components/Episode/FetchWatchedEpisodes";
+import EpisodeList from "@/components/Episode/EpisodeList";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -215,36 +215,7 @@ export default async function AnimeDetailPage({
                         <FetchWatchedEpisodes slug={slug} />
 
                         {/* Episodes card with internal scroll */}
-                        <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                            <div className="flex flex-wrap items-end justify-between gap-3">
-                                <div>
-                                    <h2 className="text-lg font-semibold">Episodios</h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        Scroll solo aquí (no en toda la página)
-                                    </p>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <Badge>{episodes.length} total</Badge>
-                                    <button
-                                        type="button"
-                                        className="rounded-2xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
-                                        title="Demo"
-                                    >
-                                        Orden ↑ (demo)
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Scroll container */}
-                            <div className="mt-4 max-h-[520px] overflow-y-auto pr-2 overscroll-contain">
-                                <div className="grid gap-2">
-                                    {episodes.map((ep) => (
-                                        <EpisodePill key={ep.number} ep={ep} />
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
+                        <EpisodeList episodes={episodes} />
 
                         {/* Related */}
                         {related.length ? (
