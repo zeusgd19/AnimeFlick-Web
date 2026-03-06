@@ -2,53 +2,67 @@ import type { ExtractResult } from "@/app/api/extract/route";
 import { chromium } from "playwright";
 
 export async function extractWithPlaywrightCapture(inputUrl: string): Promise<ExtractResult> {
+
     const browser = await chromium.launch({
         headless: true,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     try {
+
         const context = await browser.newContext({
             userAgent:
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-            locale: "es-ES",
-            viewport: { width: 1280, height: 720 },
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
         });
 
         const page = await context.newPage();
 
-        // ✅ blindado
-        let found: string | null = null;
+        const streams: string[] = [];
 
-        const capture = (u: string) => {
-            if (found !== null) return;
-            if (u.includes(".m3u8")) found = u;
-            else if (/\.(mp4|mkv)(\?|$)/i.test(u)) found = u;
+        const push = (u: string) => {
+
+            if (/doubleclick|googlesyndication|adservice|vast|popads|tracking/i.test(u))
+                return;
+
+            if (u.includes(".m3u8") || /\.(mp4|mkv)(\?|$)/i.test(u)) {
+
+                if (!streams.includes(u)) {
+                    streams.push(u);
+                    console.log("STREAM:", u);
+                }
+            }
         };
 
-        page.on("request", (r) => capture(r.url()));
-        page.on("response", (r) => capture(r.url()));
+        page.on("request", r => push(r.url()));
+        page.on("response", r => push(r.url()));
 
-        await page.goto(inputUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
+        await page.goto(inputUrl, {
+            waitUntil: "domcontentloaded",
+            timeout: 45000
+        });
 
-        const start = Date.now();
-        while (found === null && Date.now() - start < 12_000) {
-            await page.waitForTimeout(250);
-        }
+        // esperar que cargue player + posibles ads
+        await page.waitForTimeout(12000);
 
-        if (found === null) return null;
+        if (streams.length === 0) return null;
 
-        // ✅ foundUrl con tipo string garantizado
-        const foundUrl: string = found;
+        // usar el último (normalmente el real)
+        const best = streams[streams.length - 1];
 
-        const kind: "hls" | "mp4" = foundUrl.includes(".m3u8") ? "hls" : "mp4";
+        const kind: "hls" | "mp4" =
+            best.includes(".m3u8") ? "hls" : "mp4";
 
         return {
             provider: "playwright",
             kind,
-            url: foundUrl,
+            url: best,
             headers: {},
+            debug: {
+                allStreams: streams,
+                picked: best
+            }
         };
+
     } finally {
         await browser.close();
     }

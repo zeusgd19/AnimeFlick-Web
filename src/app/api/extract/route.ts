@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
         // ✅ 2) Unknown => fallback genérico
         let result = await extractByProvider(url);
-        if (!result) result = await extractWithPlaywrightCapture(url);
+        if (!result) result = await extractWithPlaywrightCapture(url, { minMinutes: 2 });
 
         if (!result) {
             return NextResponse.json(
