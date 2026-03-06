@@ -28,7 +28,7 @@ export default function LoginForm() {
 
         if (!email || !password) {
             setLoading(false);
-            setError("Introduce email y contraseña.");
+            setError("Introduce email/username y contraseña.");
             return;
         }
 
@@ -61,12 +61,12 @@ export default function LoginForm() {
     return (
         <form onSubmit={onSubmit} className="mt-6 grid gap-4">
             <label className="grid gap-2">
-                <span className="text-sm font-medium">Email</span>
+                <span className="text-sm font-medium">Email o Username</span>
                 <input
                     name="email"
-                    type="email"
-                    placeholder="tuemail@ejemplo.com"
-                    autoComplete="email"
+                    type="text"
+                    placeholder="tuemail@ejemplo.com o username"
+                    autoComplete="username"
                     className="h-11 w-full rounded-2xl border bg-card px-4 text-sm outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-foreground/10"
                 />
             </label>
