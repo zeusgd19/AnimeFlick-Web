@@ -8,7 +8,7 @@ function getAccessToken(req: NextRequest) {
     );
 }
 
-export async function POST(req: NextRequest) {
+export async function DELETE(req: NextRequest) {
     const USER_API = process.env.EXTERNAL_USER_API_BASE!;
     const token = getAccessToken(req);
     if (!token) {
@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Invalid body" }, { status: 400 });
     }
 
-    const res = await fetch(`${USER_API}/favorites/delete`, {
-        method: "POST",
+    const res = await fetch(`${USER_API}/favorites`, {
+        method: "DELETE",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

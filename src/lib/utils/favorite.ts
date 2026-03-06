@@ -221,7 +221,7 @@ export async function addFavoriteRemote(anime: FavoriteAnime) {
 
 export async function removeFavoriteRemote(animeSlug: string) {
     return await fetch("/api/favorite/delete", {
-        method: "POST",
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ anime_slug: animeSlug }),
