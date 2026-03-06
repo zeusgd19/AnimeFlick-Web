@@ -8,6 +8,7 @@ import {
     ensureFavoritesSynced,
     getFavoriteAnimes,
     type FavoriteAnime,
+    syncLocalFavoritesToRemote,
 } from "@/lib/utils/favorite";
 
 function Badge({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,15 @@ function Badge({ children }: { children: React.ReactNode }) {
         <span className="inline-flex items-center rounded-full border bg-card/60 px-2.5 py-1 text-xs text-muted-foreground backdrop-blur">
       {children}
     </span>
+    );
+}
+
+function LoadingFavorites() {
+    return (
+        <div className="flex flex-col items-center justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-foreground border-t-transparent mb-4"></div>
+            <p className="text-sm text-muted-foreground">Cargando favoritos...</p>
+        </div>
     );
 }
 
@@ -33,10 +43,11 @@ export default function FavoritesClient() {
         setData(getFavoriteAnimes());
     }, []);
 
-    // 2) refresco opcional desde server (si tienes /api/favorites)
+    // 2) refresco desde server
     useEffect(() => {
         (async () => {
-            await ensureFavoritesSynced(false);
+            await ensureFavoritesSynced(true);
+            await syncLocalFavoritesToRemote();
             setData(getFavoriteAnimes());
             setSynced(true);
         })();
@@ -64,39 +75,45 @@ export default function FavoritesClient() {
     }, [data, page]);
 
     return (
-        <section className="rounded-3xl border bg-card p-6 shadow-sm">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h2 className="text-lg font-semibold">Tus favoritos</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Mostrando {items.length} de {total} · Página {safePage}/{totalPages}
-                    </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    <Badge>Page size: {PAGE_SIZE}</Badge>
-                    <Badge>{synced ? "Sync ✓" : "Sync…"}</Badge>
-                </div>
-            </div>
-
-            {total === 0 ? (
-                <div className="mt-6 rounded-2xl border bg-card p-5">
-                    <p className="text-sm font-semibold">Aún no tienes favoritos.</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Añade animes a favoritos y aparecerán aquí.
-                    </p>
-                </div>
+        <>
+            {!synced && data.length === 0 ? (
+                <LoadingFavorites />
             ) : (
-                <>
-                    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                        {items.map((a) => (
-                            <AnimeFavoriteCard key={a.anime_slug ?? a.title} anime={a as any} />
-                        ))}
+                <section className="rounded-3xl border bg-card p-6 shadow-sm">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                            <h2 className="text-lg font-semibold">Tus favoritos</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Mostrando {items.length} de {total} · Página {safePage}/{totalPages}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <Badge>Page size: {PAGE_SIZE}</Badge>
+                            <Badge>{synced ? "Sync ✓" : "Sync…"}</Badge>
+                        </div>
                     </div>
 
-                    <Pagination basePath="/me/favorites" query={{}} data={paginationData} />
-                </>
+                    {total === 0 ? (
+                        <div className="mt-6 rounded-2xl border bg-card p-5">
+                            <p className="text-sm font-semibold">Aún no tienes favoritos.</p>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Añade animes a favoritos y aparecerán aquí.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                                {items.map((a) => (
+                                    <AnimeFavoriteCard key={a.anime_slug ?? a.title} anime={a as any} />
+                                ))}
+                            </div>
+
+                            <Pagination basePath="/me/favorites" query={{}} data={paginationData} />
+                        </>
+                    )}
+                </section>
             )}
-        </section>
+        </>
     );
 }

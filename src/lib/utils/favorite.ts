@@ -186,21 +186,26 @@ export async function syncLocalFavoritesToRemote() {
 }
 */
 
-// ---------- Remote add/remove ----------
-export async function addFavoriteRemote(anime: FavoriteAnime) {
-    return await fetch("/api/favorite", {
+export async function addFavoritesBatchRemote(favorites: FavoriteAnime[]) {
+    return await fetch("/api/favorite/add/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(anime),
+        body: JSON.stringify({ favorites }),
     });
 }
 
-export async function removeFavoriteRemote(animeSlug: string) {
-    return await fetch("/api/favorite/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ anime_slug: animeSlug }),
-    });
+export async function syncLocalFavoritesToRemote() {
+    const remoteRes = await fetchRemoteFavorites();
+    if (remoteRes.status !== 200) return;
+
+    const local = getFavoriteAnimes();
+    const remoteSet = new Set(remoteRes.favorites.map((f) => f.anime_slug));
+    const missing = local.filter((f) => !remoteSet.has(f.anime_slug));
+
+    if (missing.length > 0) {
+        await addFavoritesBatchRemote(missing);
+        // Update sync time
+        localStorage.setItem(SYNC_KEY, String(Date.now()));
+    }
 }

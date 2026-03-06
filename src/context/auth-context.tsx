@@ -22,7 +22,12 @@ export function AuthProvider({
 
     async function logout() {
         await fetch("/api/auth/logout", { method: "POST" });
+        // Clear localStorage but keep favorites
+        const favorites = localStorage.getItem('favoriteAnimes');
+        const favoritesSyncedAt = localStorage.getItem('favoriteAnimesSyncedAt');
         localStorage.clear();
+        if (favorites) localStorage.setItem('favoriteAnimes', favorites);
+        if (favoritesSyncedAt) localStorage.setItem('favoriteAnimesSyncedAt', favoritesSyncedAt);
         setUser(null);
     }
 
