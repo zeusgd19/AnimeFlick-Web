@@ -17,6 +17,23 @@ interface StatsData {
   }
 }
 
+function formatAnimeName(slug: string): string {
+  return slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+function formatEpisodeName(slug: string): { anime: string, episode: string } {
+  const parts = slug.split('-')
+  const episode = parts[parts.length - 1]
+  const anime = parts.slice(0, -1).join(' ')
+  return {
+    anime: anime.charAt(0).toUpperCase() + anime.slice(1),
+    episode
+  }
+}
+
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-2xl border bg-card p-3">
@@ -119,13 +136,13 @@ export default function ProfileStats() {
         </p>
         <div className="mt-4 space-y-3">
           <div className="rounded-2xl border bg-card p-3">
-            <p className="text-sm">Vio el episodio {stats.last_episode_watched.episode_slug}</p>
+            <p className="text-sm">Vio el episodio {formatEpisodeName(stats.last_episode_watched.episode_slug).episode} de "{formatEpisodeName(stats.last_episode_watched.episode_slug).anime}"</p>
             <p className="text-xs text-muted-foreground">
               {new Date(stats.last_episode_watched.created_at).toLocaleDateString('es-ES')}
             </p>
           </div>
           <div className="rounded-2xl border bg-card p-3">
-            <p className="text-sm">Añadió {stats.last_anime_added.anime_id} a {stats.last_anime_added.list}</p>
+            <p className="text-sm">Añadió {formatAnimeName(stats.last_anime_added.anime_id)} a {stats.last_anime_added.list}</p>
             <p className="text-xs text-muted-foreground">
               {new Date(stats.last_anime_added.created_at).toLocaleDateString('es-ES')}
             </p>
