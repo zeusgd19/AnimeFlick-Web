@@ -3,7 +3,8 @@ export interface SupabaseUser {
     email?: string | null,
     phone?: string | null,
     display_name?: string | null,
-    user_metadata?: SupabaseMetadataUser | null
+    user_metadata?: SupabaseMetadataUser | null,
+    created_at?: string | null,
 }
 
 export interface SupabaseMetadataUser {
@@ -36,4 +37,5 @@ export type AuthUser = {
     id: string;
     email?: string | null;
     display_name?: string | null;
+    created_at?: string | null;
 };

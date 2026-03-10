@@ -77,7 +77,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
                                 >
                                     Ver perfil
                                 </Link>
-                                <LogoutMenuItem className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-accent" />
+                                <LogoutMenuItem className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-accent cursor-pointer" />
                             </div>
                         </details>
                     ) : (

@@ -48,6 +48,7 @@ export async function POST(req: Request) {
         email: data.user.email ?? null,
         display_name:
             data.user.display_name ?? data.user.user_metadata?.display_name ?? null,
+        created_at: data.user.created_at ?? null,
     };
 
     res.cookies.set("af_user", JSON.stringify(uiUser), {

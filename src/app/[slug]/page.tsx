@@ -3,6 +3,7 @@ import Link from "next/link";
 import Header from "@/components/Header/header";
 import Footer from "@/components/Footer/footer";
 import { getCurrentUser } from "@/lib/auth/session";
+import UserSettings from "@/components/User/UserSettings";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -43,11 +44,15 @@ export default async function ProfilePage({
     );
 
     // Placeholder data
+    const joinedDate = currentUser?.created_at
+        ? new Date(currentUser.created_at).toLocaleDateString('es-ES')
+        : "2023-01-01";
+
     const user = {
-        username: slug,
-        displayName: slug,
+        username: currentUser?.display_name || '',
+        displayName: currentUser?.display_name || '',
         email: isOwnProfile ? currentUser.email : "privado",
-        joined: "2023-01-01",
+        joined: joinedDate,
         stats: {
             animesWatched: 150,
             episodesWatched: 2500,
@@ -146,96 +151,8 @@ export default async function ProfilePage({
                         {/* Settings for own profile */}
                         {isOwnProfile && (
                             <>
-                                {/* Change Password */}
-                                <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                                    <h2 className="text-lg font-semibold">Cambiar contraseña</h2>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Actualiza tu contraseña para mantener tu cuenta segura.
-                                    </p>
+                                <UserSettings currentEmail={currentUser?.email || ''} currentUsername={currentUser?.display_name || ''} />
 
-                                    <form className="mt-4 space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium">Contraseña actual</label>
-                                            <input
-                                                type="password"
-                                                className="mt-1 block w-full rounded-2xl border bg-card px-3 py-2 text-sm"
-                                                placeholder="Ingresa tu contraseña actual"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium">Nueva contraseña</label>
-                                            <input
-                                                type="password"
-                                                className="mt-1 block w-full rounded-2xl border bg-card px-3 py-2 text-sm"
-                                                placeholder="Ingresa una nueva contraseña"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium">Confirmar nueva contraseña</label>
-                                            <input
-                                                type="password"
-                                                className="mt-1 block w-full rounded-2xl border bg-card px-3 py-2 text-sm"
-                                                placeholder="Confirma la nueva contraseña"
-                                            />
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                                        >
-                                            Cambiar contraseña
-                                        </button>
-                                    </form>
-                                </section>
-
-                                {/* Change Email */}
-                                <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                                    <h2 className="text-lg font-semibold">Cambiar email</h2>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Actualiza tu dirección de email. Recibirás un enlace de verificación.
-                                    </p>
-
-                                    <form className="mt-4 space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium">Nuevo email</label>
-                                            <input
-                                                type="email"
-                                                className="mt-1 block w-full rounded-2xl border bg-card px-3 py-2 text-sm"
-                                                placeholder="Ingresa tu nuevo email"
-                                            />
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                                        >
-                                            Cambiar email
-                                        </button>
-                                    </form>
-                                </section>
-
-                                {/* Delete Account */}
-                                <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                                    <h2 className="text-lg font-semibold text-red-600">Eliminar cuenta</h2>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Esta acción es permanente. Todos tus datos serán eliminados.
-                                    </p>
-
-                                    <form className="mt-4 space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium">Confirma tu contraseña</label>
-                                            <input
-                                                type="password"
-                                                className="mt-1 block w-full rounded-2xl border bg-card px-3 py-2 text-sm"
-                                                placeholder="Ingresa tu contraseña para confirmar"
-                                            />
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                                        >
-                                            Eliminar cuenta
-                                        </button>
-                                    </form>
-                                </section>
                             </>
                         )}
                     </div>
