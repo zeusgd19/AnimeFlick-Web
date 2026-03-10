@@ -4,6 +4,7 @@ import Header from "@/components/Header/header";
 import Footer from "@/components/Footer/footer";
 import { getCurrentUser } from "@/lib/auth/session";
 import UserSettings from "@/components/User/UserSettings";
+import ProfileStats from "@/components/Profile/ProfileStats";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -120,33 +121,7 @@ export default async function ProfilePage({
                 <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
                     {/* LEFT: Profile content */}
                     <div className="space-y-6">
-                        {/* Stats */}
-                        <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold">Estadísticas</h2>
-                            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                                <Stat label="Animes vistos" value={user.stats.animesWatched} />
-                                <Stat label="Episodios vistos" value={user.stats.episodesWatched} />
-                                <Stat label="Favoritos" value={user.stats.favorites} />
-                            </div>
-                        </section>
-
-                        {/* Recent Activity Placeholder */}
-                        <section className="rounded-3xl border bg-card p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold">Actividad reciente</h2>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Últimos animes vistos o listas actualizadas.
-                            </p>
-                            <div className="mt-4 space-y-3">
-                                <div className="rounded-2xl border bg-card p-3">
-                                    <p className="text-sm">Vio el episodio 12 de "One Piece"</p>
-                                    <p className="text-xs text-muted-foreground">Hace 2 días</p>
-                                </div>
-                                <div className="rounded-2xl border bg-card p-3">
-                                    <p className="text-sm">Añadió "Naruto" a favoritos</p>
-                                    <p className="text-xs text-muted-foreground">Hace 1 semana</p>
-                                </div>
-                            </div>
-                        </section>
+                        <ProfileStats />
 
                         {/* Settings for own profile */}
                         {isOwnProfile && (
