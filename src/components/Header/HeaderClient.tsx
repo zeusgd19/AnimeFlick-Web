@@ -31,7 +31,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
         <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
                 <Link href="/" className="flex items-center gap-2 font-semibold">
-                    <img src="/logo_a.png" className="inline-flex h-14 w-14 items-center justify-center rounded-xl"/>
+                    <img src="/logo_a.png" className="inline-flex h-14 w-14 items-center justify-center rounded-xl" />
                     <p className="text-xl">AnimeFlick</p>
                 </Link>
 
@@ -58,7 +58,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
                         >
                             Mis listas
                         </Link>
-                    ): null}
+                    ) : null}
                     {user ? (
                         <details className="relative">
                             <summary className="list-none">
@@ -70,7 +70,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
                                     {displayName.slice(0, 1).toUpperCase()}
                                 </span>
                             </summary>
-                            <div className="absolute right-0 mt-2 w-44 rounded-xl border bg-card p-2 shadow-lg">
+                            <div className="absolute right-0 mt-2 w-44 rounded-xl border p-2 shadow-lg bg-black">
                                 <Link
                                     href={profileHref}
                                     className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
@@ -121,7 +121,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
                             >
                                 Mis listas
                             </Link>
-                        ): null}
+                        ) : null}
                         {user ? (
                             <div className="space-y-2">
                                 <Link
