@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/components/Header/header";
 import WatchPlayer from "@/components/Watch/watch-player";
+import CommentsSection from "@/components/Watch/comments-section";
 import { fetchServersEpisode } from "@/lib/providers/anime";
 import { parseEpisodeSlug } from "@/lib/utils/episode";
 import type { ServerEpisodeResponse } from "@/types/anime";
@@ -148,7 +149,7 @@ export default async function WatchPage({
                                 <WatchPlayer animeSlug={animeSlug!} episode={episode}/>
                             </section>
 
-                            <aside className="lg:sticky lg:top-20 h-fit space-y-6">
+                            <aside className="h-fit space-y-6">
                                 <div className="rounded-3xl border bg-card p-6 shadow-sm">
                                     <h3 className="text-sm font-semibold">Episodio</h3>
 
@@ -185,6 +186,7 @@ export default async function WatchPage({
                                     </div>
                                     <EpisodeSeenRow episodeSlug={episodeSlug}></EpisodeSeenRow>
                                 </div>
+                                <CommentsSection episodeSlug={episodeSlug} />
                             </aside>
                         </div>
 

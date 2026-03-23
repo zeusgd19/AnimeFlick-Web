@@ -59,10 +59,25 @@ export async function fetchAnimesOnAir() {
     const url = `${base}/api/list/animes-on-air`;
 
     // Home tolerante
-    return safeJsonFetch<any>(url, {
+    const data = await safeJsonFetch<any>(url, {
         next: { revalidate: 300 },
         timeoutMs: 8000,
     });
+
+    const animeModified = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
+    const kakkouNoIinazukeSeasonTwo = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
+
+    if (animeModified) {
+        animeModified.title = "La gayola a mi cuco";
+        animeModified.synopsis = "Hazte una gayola mi cucooo!!";
+    }
+
+    if (kakkouNoIinazukeSeasonTwo) {
+        kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
+        kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
+    }
+
+    return data;
 }
 
 export async function fetchAnimeBySlug(slug: string) {
@@ -70,10 +85,25 @@ export async function fetchAnimeBySlug(slug: string) {
     const url = `${base}/api/anime/${encodeURIComponent(slug)}`;
 
     // Detalle anime es crítico: si falla, no puedes renderizar esa página
-    return strictJsonFetch<any>(url, {
+    const data = await strictJsonFetch<any>(url, {
         next: { revalidate: 300 },
         timeoutMs: 8000,
     });
+
+    const kakkouNoIinazuke = data?.data?.title === "Kakkou no Iinazuke";
+    const kakkouNoIinazukeSeasonTwo = data?.data?.title === "Kakkou no Iinazuke Season 2";
+
+    if (kakkouNoIinazuke) {
+        data.data.title = "La gayola a mi cuco";
+        data.data.synopsis = "Hazte una gayola mi cucooo!!";
+    }
+
+    if (kakkouNoIinazukeSeasonTwo) {
+        data.data.title = "La gayola a mi cuco 2";
+        data.data.synopsis = "Hazte una segunda gayola mi cucooo!!";
+    }
+
+    return data;
 }
 
 type FilterOrder = "title" | "rating" | "updated" | string;
@@ -116,13 +146,28 @@ export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParam
     // decide tú. Yo dejo bodyObj vacío permitido.
     const url = `${base}/api/search/by-filter?order=${encodeURIComponent(order)}&page=${page}`;
 
-    return safeJsonFetch<any>(url, {
+    const data = await safeJsonFetch<any>(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bodyObj),
         next: { revalidate: 300 },
         timeoutMs: 8000,
     });
+
+    const animeMofied = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
+    const kakkouNoIinazukeSeasonTwo = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
+
+    if (animeMofied) {
+        animeMofied.title = "La gayola a mi cuco";
+        animeMofied.synopsis = "Hazte una gayola mi cucooo!!";
+    }
+
+    if (kakkouNoIinazukeSeasonTwo) {
+        kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
+        kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
+    }
+
+    return data;
 }
 
 export async function fetchSearchAnime(query: string, page = 1) {
@@ -130,13 +175,28 @@ export async function fetchSearchAnime(query: string, page = 1) {
     const url = `${base}/api/search?query=${encodeURIComponent(query)}&page=${page}`;
 
     // Search: tolerante
-    return safeJsonFetch<any>(url, {
+    const data = await safeJsonFetch<any>(url, {
         next: { revalidate: 300 },
         timeoutMs: 8000,
     });
+
+    const animeModified = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
+    const kakkouNoIinazukeSeasonTwo = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
+
+    if (animeModified) {
+        animeModified.title = "La gayola a mi cuco";
+        animeModified.synopsis = "Hazte una gayola mi cucooo!!";
+    }
+
+    if (kakkouNoIinazukeSeasonTwo) {
+        kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
+        kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
+    }
+
+    return data;
 }
 
-export async function fetchServersEpisode(slug: string, number: number){
+export async function fetchServersEpisode(slug: string, number: number) {
     const base = process.env.EXTERNAL_API_BASE!;
     const url = `${base}/api/anime/${slug}/episode/${number}`;
 

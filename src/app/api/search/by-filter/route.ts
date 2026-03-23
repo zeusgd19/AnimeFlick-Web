@@ -1,5 +1,6 @@
-import {NextResponse} from "next/server";
-import {fetchAnimesByFilter} from "@/lib/providers/anime";
+import { NextResponse } from "next/server";
+import { fetchAnimesByFilter } from "@/lib/providers/anime";
+import { Anime } from "@/types/anime";
 
 export async function POST(req: Request) {
     try {
@@ -11,6 +12,14 @@ export async function POST(req: Request) {
         }
 
         const data = await fetchAnimesByFilter(type);
+
+        const media = data.media;
+        const animeModified = media.find((anime: Anime) => anime.title === "Kakkou no Iinazuke");
+
+        if (animeModified) {
+            animeModified.title = "Gayola mi cuco";
+        }
+
         return NextResponse.json(data);
     } catch (e) {
         return NextResponse.json({ error: "Upstream error" }, { status: 502 });
