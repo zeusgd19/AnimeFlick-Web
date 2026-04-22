@@ -1,10 +1,11 @@
 // src/lib/providers/anime.ts
 import "server-only";
 import { RealAnimeType } from "@/types/anime";
+import * as cheerio from "cheerio";
 
-/**
- * Fetch con timeout POR REQUEST (no global).
- */
+// ---------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------
 function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, ms = 8000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
@@ -29,187 +30,434 @@ async function strictJsonFetch<T>(url: string, opts: FetchJsonOptions = {}): Pro
     return (await res.json()) as T;
 }
 
-async function safeJsonFetch<T>(url: string, opts: FetchJsonOptions = {}): Promise<T | null> {
+// ---------------------------------------------------------
+// Fallback Scraper (TioAnime)
+// ---------------------------------------------------------
+const TIO_BASE_URL = "https://tioanime.com";
+
+async function fetchHtmlFallback(url: string, nextOpts?: any, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
-        return await strictJsonFetch<T>(url, opts);
-    } catch (e) {
-        console.warn("[safeJsonFetch] failed:", url, e);
-        return null;
+        const res = await fetch(url, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            },
+            next: nextOpts,
+            signal: controller.signal,
+        });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return await res.text();
+    } finally {
+        clearTimeout(timeout);
     }
 }
 
-/**
- * Providers EXTERNAL API
- * - En Home/Search: puedes usar safe si no quieres que reviente por un fallo puntual
- * - En páginas críticas (detalle anime): usa strict
- */
-export async function fetchLatestEpisodesFromExternal() {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const url = `${base}/api/list/latest-episodes`;
+async function fallbackLatestEpisodes() {
+    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/`, { revalidate: 300 });
+    const $ = cheerio.load(html);
 
-    // Home suele ser tolerante: si falla, mejor devolver null y mostrar placeholder
-    return safeJsonFetch<any>(url, {
-        next: { revalidate: 300 },
-        timeoutMs: 8000,
+    const data: any[] = [];
+    $('.episodes li').each((_, el) => {
+        const title = $(el).find('h3.title').text().trim();
+        const url = $(el).find('a').attr('href') || "";
+        const img = $(el).find('img').attr('src') || "";
+        
+        const fullSlug = url.split('/').pop() || "";
+        const match = fullSlug.match(/(.+)-(\d+)$/);
+        let slug = fullSlug;
+        let episode = 1;
+        if (match) {
+            slug = match[1];
+            episode = parseInt(match[2], 10);
+        }
+
+        data.push({
+            title,
+            slug: fullSlug,
+            number: episode,
+            cover: TIO_BASE_URL + img,
+            url: fullSlug, 
+        });
     });
+
+    return { success: true, data };
+}
+
+async function fallbackAnimesOnAir() {
+    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/directorio?estado=1`, { revalidate: 300 });
+    const $ = cheerio.load(html);
+
+    const data: any[] = [];
+    $('.animes .anime').each((_, el) => {
+        const title = $(el).find('h3.title').text().trim();
+        const url = $(el).find('a').attr('href') || "";
+        const img = $(el).find('img').attr('src') || "";
+        const slug = url.split('/').pop() || "";
+
+        data.push({
+            title,
+            slug,
+            cover: TIO_BASE_URL + img,
+            type: "tv",
+        });
+    });
+
+    return { success: true, data: data.slice(0, 20) };
+}
+
+async function fallbackAnimeBySlug(slug: string) {
+    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/anime/${slug}`, { revalidate: 300 });
+    const $ = cheerio.load(html);
+
+    const title = $('h1.title').text().trim();
+    const synopsis = $('.sinopsis').text().trim();
+    const cover = TIO_BASE_URL + $('.thumb img').attr('src');
+    const rating = "4.5";
+    
+    let episodesData: number[] = [];
+    const scriptTags = $('script').map((i, el) => $(el).html()).get();
+    for (const script of scriptTags) {
+        if (script && script.includes('var episodes = ')) {
+            const match = script.match(/var episodes = (\[.*?\]);/);
+            if (match) {
+                try {
+                    episodesData = JSON.parse(match[1]);
+                } catch(e) {}
+            }
+        }
+    }
+
+    const episodes = episodesData.map(num => ({
+        number: num,
+        title: `Episodio ${num}`,
+        image: cover,
+        slug: `${slug}-${num}`,
+        url: `${TIO_BASE_URL}/ver/${slug}-${num}`
+    }));
+
+    const result = {
+        title,
+        synopsis,
+        cover,
+        slug,
+        rating,
+        episodes
+    };
+
+    return { success: true, data: result };
+}
+
+async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
+    const isLegacy = typeof arg1 === "string";
+    const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
+    
+    let url = `${TIO_BASE_URL}/directorio?p=${page}`;
+
+    const typeMap: Record<string, number> = {
+        "tv": 0,
+        "movie": 1,
+        "ova": 2,
+        "special": 3
+    };
+
+    if (isLegacy) {
+        if (typeMap[arg1 as string] !== undefined) {
+            url += `&type[]=${typeMap[arg1 as string]}`;
+        }
+    } else {
+        if (arg1.types && arg1.types.length > 0) {
+            arg1.types.forEach(t => {
+                if (typeMap[t] !== undefined) {
+                    url += `&type[]=${typeMap[t]}`;
+                }
+            });
+        }
+        if (arg1.genres && arg1.genres.length > 0) {
+            arg1.genres.forEach(g => {
+                url += `&generos[]=${encodeURIComponent(g)}`;
+            });
+        }
+        if (arg1.statuses && arg1.statuses.length > 0) {
+            url += `&estado=${arg1.statuses[0]}`;
+        }
+    }
+
+    const html = await fetchHtmlFallback(url, { revalidate: 300 });
+    const $ = cheerio.load(html);
+
+    const media: any[] = [];
+    $('.animes .anime').each((_, el) => {
+        const title = $(el).find('h3.title').text().trim();
+        const urlPath = $(el).find('a').attr('href') || "";
+        const img = $(el).find('img').attr('src') || "";
+        const slug = urlPath.split('/').pop() || "";
+
+        media.push({
+            title,
+            slug,
+            cover: TIO_BASE_URL + img,
+            rating: "4.0",
+        });
+    });
+
+    const paginationList = $('.pagination li');
+    const lastPageEl = paginationList.not('.disabled').last().find('a').attr('href');
+    let foundPages = page;
+    if (lastPageEl) {
+        const pMatch = lastPageEl.match(/p=(\d+)/);
+        if (pMatch) foundPages = parseInt(pMatch[1], 10);
+    }
+    
+    return {
+        success: true,
+        data: {
+            currentPage: page,
+            hasNextPage: page < foundPages,
+            previousPage: page > 1 ? String(page - 1) : null,
+            nextPage: page < foundPages ? String(page + 1) : null,
+            foundPages,
+            media
+        }
+    };
+}
+
+async function fallbackSearchAnime(query: string, page = 1) {
+    const url = `${TIO_BASE_URL}/directorio?q=${encodeURIComponent(query)}&p=${page}`;
+    const html = await fetchHtmlFallback(url, { revalidate: 300 });
+    const $ = cheerio.load(html);
+
+    const media: any[] = [];
+    $('.animes .anime').each((_, el) => {
+        const title = $(el).find('h3.title').text().trim();
+        const urlPath = $(el).find('a').attr('href') || "";
+        const img = $(el).find('img').attr('src') || "";
+        const slug = urlPath.split('/').pop() || "";
+
+        media.push({
+            title,
+            slug,
+            cover: TIO_BASE_URL + img,
+            rating: "4.0",
+        });
+    });
+
+    return {
+        success: true,
+        data: {
+            media
+        }
+    };
+}
+
+async function fallbackServersEpisode(slug: string, number: number) {
+    const url = `${TIO_BASE_URL}/ver/${slug}-${number}`;
+    const html = await fetchHtmlFallback(url, { revalidate: 300 });
+    const $ = cheerio.load(html);
+
+    let serversData: any[] = [];
+    const scriptTags = $('script').map((i, el) => $(el).html()).get();
+    for (const script of scriptTags) {
+        if (script && script.includes('var videos = ')) {
+            const match = script.match(/var videos = (\[.*?\]);/);
+            if (match) {
+                try {
+                    serversData = JSON.parse(match[1]);
+                } catch(e) {}
+            }
+        }
+    }
+
+    let servers = serversData.map((s: any) => ({
+        name: s[0],
+        embed: s[1],
+    }));
+
+    servers = servers.filter(s => !s.embed.includes('v.tioanime.com/embed.php'));
+
+    const title = $('h1.title').text().trim() || slug;
+
+    return { 
+        success: true, 
+        data: {
+            title: title,
+            number: number,
+            servers: servers
+        }
+    };
+}
+
+// ---------------------------------------------------------
+// MAIN EXPORTS (AnimeFLV Primary -> TioAnime Fallback)
+// ---------------------------------------------------------
+
+export async function fetchLatestEpisodesFromExternal() {
+    try {
+        const base = process.env.EXTERNAL_API_BASE!;
+        const url = `${base}/api/list/latest-episodes`;
+        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
+        if (res && res.success) return res;
+        throw new Error("Primary API returned invalid success");
+    } catch (e) {
+        console.warn("[Primary API] fetchLatestEpisodesFromExternal failed:", e?.toString());
+        try { return await fallbackLatestEpisodes(); } catch (f) { return null; }
+    }
 }
 
 export async function fetchAnimesOnAir() {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const url = `${base}/api/list/animes-on-air`;
+    try {
+        const base = process.env.EXTERNAL_API_BASE!;
+        const url = `${base}/api/list/animes-on-air`;
+        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
-    // Home tolerante
-    const data = await safeJsonFetch<any>(url, {
-        next: { revalidate: 300 },
-        timeoutMs: 8000,
-    });
-
-    const animeModified = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
-    const kakkouNoIinazukeSeasonTwo = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
-
-    if (animeModified) {
-        animeModified.title = "La gayola a mi cuco";
-        animeModified.synopsis = "Hazte una gayola mi cucooo!!";
+        if (res && res.success) {
+            const animeModified = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
+            const kakkouNoIinazukeSeasonTwo = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
+            if (animeModified) {
+                animeModified.title = "La gayola a mi cuco";
+                animeModified.synopsis = "Hazte una gayola mi cucooo!!";
+            }
+            if (kakkouNoIinazukeSeasonTwo) {
+                kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
+                kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
+            }
+            return res;
+        }
+        throw new Error("Primary API returned invalid success");
+    } catch (e) {
+        console.warn("[Primary API] fetchAnimesOnAir failed:", e?.toString());
+        try { return await fallbackAnimesOnAir(); } catch (f) { return null; }
     }
-
-    if (kakkouNoIinazukeSeasonTwo) {
-        kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
-        kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
-    }
-
-    return data;
 }
 
 export async function fetchAnimeBySlug(slug: string) {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const url = `${base}/api/anime/${encodeURIComponent(slug)}`;
+    try {
+        const base = process.env.EXTERNAL_API_BASE!;
+        const url = `${base}/api/anime/${encodeURIComponent(slug)}`;
+        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
-    // Detalle anime es crítico: si falla, no puedes renderizar esa página
-    const data = await strictJsonFetch<any>(url, {
-        next: { revalidate: 300 },
-        timeoutMs: 8000,
-    });
-
-    const kakkouNoIinazuke = data?.data?.title === "Kakkou no Iinazuke";
-    const kakkouNoIinazukeSeasonTwo = data?.data?.title === "Kakkou no Iinazuke Season 2";
-
-    if (kakkouNoIinazuke) {
-        data.data.title = "La gayola a mi cuco";
-        data.data.synopsis = "Hazte una gayola mi cucooo!!";
+        if (res && res.success) {
+            const kakkouNoIinazuke = res?.data?.title === "Kakkou no Iinazuke";
+            const kakkouNoIinazukeSeasonTwo = res?.data?.title === "Kakkou no Iinazuke Season 2";
+            if (kakkouNoIinazuke) {
+                res.data.title = "La gayola a mi cuco";
+                res.data.synopsis = "Hazte una gayola mi cucooo!!";
+            }
+            if (kakkouNoIinazukeSeasonTwo) {
+                res.data.title = "La gayola a mi cuco 2";
+                res.data.synopsis = "Hazte una segunda gayola mi cucooo!!";
+            }
+            return res;
+        }
+        throw new Error("Primary API returned invalid success");
+    } catch (e) {
+        console.warn("[Primary API] fetchAnimeBySlug failed:", e?.toString());
+        return await fallbackAnimeBySlug(slug);
     }
-
-    if (kakkouNoIinazukeSeasonTwo) {
-        data.data.title = "La gayola a mi cuco 2";
-        data.data.synopsis = "Hazte una segunda gayola mi cucooo!!";
-    }
-
-    return data;
 }
 
-type FilterOrder = "title" | "rating" | "updated" | string;
-
+export type FilterOrder = "title" | "rating" | "updated" | string;
 export type AnimeFilterParams = {
     page?: number;
     order?: FilterOrder;
-
-    // filtros (todos opcionales)
     types?: RealAnimeType[];
     genres?: string[];
-    statuses?: number[]; // si quieres: (1 | 2 | 3)[]
+    statuses?: number[]; 
 };
 
-// ✅ Overloads: (old) fetchAnimesByFilter(type, page) y (new) fetchAnimesByFilter({...})
 export async function fetchAnimesByFilter(type: RealAnimeType, page?: number): Promise<any>;
 export async function fetchAnimesByFilter(params: AnimeFilterParams): Promise<any>;
-
 export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const isLegacy = typeof arg1 === "string";
+    try {
+        const base = process.env.EXTERNAL_API_BASE!;
+        const isLegacy = typeof arg1 === "string";
+        const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
+        const order = isLegacy ? "title" : (arg1.order ?? "title");
 
-    const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
-    const order = isLegacy ? "title" : (arg1.order ?? "title");
+        const bodyObj: Record<string, any> = {};
+        if (isLegacy) {
+            bodyObj.types = [arg1];
+        } else {
+            if (arg1.types?.length) bodyObj.types = arg1.types;
+            if (arg1.genres?.length) bodyObj.genres = arg1.genres;
+            if (arg1.statuses?.length) bodyObj.statuses = arg1.statuses;
+        }
 
-    // Construimos body según filtros recibidos
-    const bodyObj: Record<string, any> = {};
+        const url = `${base}/api/search/by-filter?order=${encodeURIComponent(order)}&page=${page}`;
+        const res = await strictJsonFetch<any>(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bodyObj),
+            next: { revalidate: 300 },
+            timeoutMs: 8000,
+        });
 
-    if (isLegacy) {
-        bodyObj.types = [arg1]; // legacy => solo type
-    } else {
-        if (arg1.types?.length) bodyObj.types = arg1.types;
-        if (arg1.genres?.length) bodyObj.genres = arg1.genres;
-        if (arg1.statuses?.length) bodyObj.statuses = arg1.statuses;
+        if (res && res.success) {
+            const animeMofied = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
+            const kakkouNoIinazukeSeasonTwo = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
+            if (animeMofied) {
+                animeMofied.title = "La gayola a mi cuco";
+                animeMofied.synopsis = "Hazte una gayola mi cucooo!!";
+            }
+            if (kakkouNoIinazukeSeasonTwo) {
+                kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
+                kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
+            }
+            return res;
+        }
+        throw new Error("Primary API returned invalid success");
+    } catch (e) {
+        console.warn("[Primary API] fetchAnimesByFilter failed:", e?.toString());
+        try { return await fallbackAnimesByFilter(arg1, arg2); } catch (f) { return null; }
     }
-
-    // Si no se manda ningún filtro, tu API puede:
-    // - devolver todo
-    // - o devolver error
-    // decide tú. Yo dejo bodyObj vacío permitido.
-    const url = `${base}/api/search/by-filter?order=${encodeURIComponent(order)}&page=${page}`;
-
-    const data = await safeJsonFetch<any>(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyObj),
-        next: { revalidate: 300 },
-        timeoutMs: 8000,
-    });
-
-    const animeMofied = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
-    const kakkouNoIinazukeSeasonTwo = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
-
-    if (animeMofied) {
-        animeMofied.title = "La gayola a mi cuco";
-        animeMofied.synopsis = "Hazte una gayola mi cucooo!!";
-    }
-
-    if (kakkouNoIinazukeSeasonTwo) {
-        kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
-        kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
-    }
-
-    return data;
 }
 
 export async function fetchSearchAnime(query: string, page = 1) {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const url = `${base}/api/search?query=${encodeURIComponent(query)}&page=${page}`;
+    try {
+        const base = process.env.EXTERNAL_API_BASE!;
+        const url = `${base}/api/search?query=${encodeURIComponent(query)}&page=${page}`;
+        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
-    // Search: tolerante
-    const data = await safeJsonFetch<any>(url, {
-        next: { revalidate: 300 },
-        timeoutMs: 8000,
-    });
-
-    const animeModified = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
-    const kakkouNoIinazukeSeasonTwo = data?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
-
-    if (animeModified) {
-        animeModified.title = "La gayola a mi cuco";
-        animeModified.synopsis = "Hazte una gayola mi cucooo!!";
+        if (res && res.success) {
+            const animeModified = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
+            const kakkouNoIinazukeSeasonTwo = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
+            if (animeModified) {
+                animeModified.title = "La gayola a mi cuco";
+                animeModified.synopsis = "Hazte una gayola mi cucooo!!";
+            }
+            if (kakkouNoIinazukeSeasonTwo) {
+                kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
+                kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
+            }
+            return res;
+        }
+        throw new Error("Primary API returned invalid success");
+    } catch (e) {
+        console.warn("[Primary API] fetchSearchAnime failed:", e?.toString());
+        try { return await fallbackSearchAnime(query, page); } catch (f) { return null; }
     }
-
-    if (kakkouNoIinazukeSeasonTwo) {
-        kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
-        kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
-    }
-
-    return data;
 }
 
 export async function fetchServersEpisode(slug: string, number: number) {
-    const base = process.env.EXTERNAL_API_BASE!;
-    const url = `${base}/api/anime/${slug}/episode/${number}`;
-
-    return strictJsonFetch<any>(url, {
-        next: { revalidate: 300 },
-        timeoutMs: 8000,
-    })
+    try {
+        const base = process.env.EXTERNAL_API_BASE!;
+        const url = `${base}/api/anime/${slug}/episode/${number}`;
+        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
+        if (res && res.success) return res;
+        throw new Error("Primary API returned invalid success");
+    } catch (e) {
+        console.warn("[Primary API] fetchServersEpisode failed:", e?.toString());
+        return await fallbackServersEpisode(slug, number);
+    }
 }
 
-/**
- * AniList (NO debe romper nunca la web).
- * Devuelve null si falla (429, 5xx, network, etc.)
- */
+// ---------------------------------------------------------
+// AniList
+// ---------------------------------------------------------
 const ANILIST_URL = "https://graphql.anilist.co";
 
 function sleep(ms: number) {
@@ -228,33 +476,32 @@ export async function fetchBannerFromAniListByTitle(title: string) {
     }
   `;
 
-    // Reintento ligero (por rate limit / picos)
     for (let attempt = 0; attempt < 2; attempt++) {
-        const json = await safeJsonFetch<any>(ANILIST_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                "User-Agent": "AnimeFlick-Web/1.0",
-            },
-            body: JSON.stringify({ query, variables: { search: title } }),
-            next: { revalidate: 86400 }, // 1 día
-            timeoutMs: 8000,
-        });
+        try {
+            const res = await strictJsonFetch<any>(ANILIST_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "User-Agent": "AnimeFlick-Web/1.0",
+                },
+                body: JSON.stringify({ query, variables: { search: title } }),
+                next: { revalidate: 86400 },
+                timeoutMs: 8000,
+            });
 
-        const media = json?.data?.Media;
-        if (media) {
-            return {
-                id: media.id,
-                banner: media.bannerImage ?? null,
-                cover: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
-                title: media.title?.romaji ?? media.title?.english ?? media.title?.native ?? title,
-            };
-        }
+            const media = res?.data?.Media;
+            if (media) {
+                return {
+                    id: media.id,
+                    banner: media.bannerImage ?? null,
+                    cover: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
+                    title: media.title?.romaji ?? media.title?.english ?? media.title?.native ?? title,
+                };
+            }
+        } catch(e) {}
 
-        // si falló o no encontró y es el primer intento, espera un poco y reintenta
         if (attempt === 0) await sleep(600);
     }
-
     return null;
 }

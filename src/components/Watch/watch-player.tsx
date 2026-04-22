@@ -21,13 +21,7 @@ function getHost(url?: string | null) {
 }
 
 function shouldDisableSandboxFor(host: string) {
-    // Ajusta según lo que te llegue en embedUrl (streamwish.to / streamwish.com / etc.)
-    return (
-        host.includes("streamwish") ||
-        host.includes("streamwish.to") ||
-        host.includes("streamwish.com") ||
-        host.includes("swish") // opcional si ves variantes
-    );
+    return true; // Disable sandbox for all hosts
 }
 
 export default function WatchPlayer({
@@ -97,13 +91,7 @@ export default function WatchPlayer({
                                 src={embedUrl}
                                 className="h-full w-full"
                                 allowFullScreen
-                                referrerPolicy="no-referrer"
-                                // Si algún embed se queja, puedes quitar sandbox o ajustarlo
-                                sandbox={
-                                    disableSandbox
-                                        ? undefined // 👈 IMPORTANTÍSIMO: así NO se añade el atributo sandbox
-                                        : "allow-same-origin allow-scripts allow-presentation allow-forms allow-popups"
-                                }
+                                // sandbox and referrerPolicy removed to prevent blocking servers like Mega, Netu, etc.
                             />
                         ) : (
                             <div className="flex h-full w-full items-center justify-center p-6 text-center">
