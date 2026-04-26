@@ -17,7 +17,7 @@ export default function TicketForm() {
 
     useEffect(() => {
         if (user?.email) {
-            setFormData(prev => ({ ...prev, email: user.email }));
+            setFormData(prev => ({ ...prev, email: user.email ?? "" }));
         }
     }, [user]);
 
