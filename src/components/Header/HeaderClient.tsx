@@ -62,7 +62,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
                                     title={displayName}
                                     aria-label={`Perfil de ${displayName}`}
                                 >
-                                    {displayName.slice(0, 1).toUpperCase()}
+                                    {Array.from(displayName)[0].toUpperCase()}
                                 </span>
                             </summary>
                             <div className="absolute right-0 mt-2 w-48 rounded-xl border p-2 shadow-xl bg-background flex flex-col gap-1">
