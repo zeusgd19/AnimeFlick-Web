@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import EpisodePill from './episode-pill'
 import type { Episode } from '@/types/anime'
-import { mergeSeenEpisodes, removeEpisodesFromLocal } from '@/lib/utils/episode'
+import { mergeSeenEpisodes, removeEpisodesFromLocal, getSeenEpisodes } from '@/lib/utils/episode'
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -29,16 +29,24 @@ export default function EpisodeList({ episodes }: Props) {
     const buttonText = order === 'asc' ? 'Orden ↑' : 'Orden ↓'
 
     const markAllAsWatched = async () => {
-        const slugs = episodes.map(ep => ep.slug).slice(0, 100);
+        const seen = new Set(getSeenEpisodes());
+        const unwatchedSlugs = [...episodes]
+            .sort((a, b) => a.number - b.number) // Asegurar orden cronológico
+            .map(ep => ep.slug)
+            .filter(slug => !seen.has(slug))
+            .slice(0, 100);
+
+        if (unwatchedSlugs.length === 0) return;
+
         try {
             const res = await fetch('/api/anime/watched/batch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ episodes: slugs })
+                body: JSON.stringify({ episodes: unwatchedSlugs })
             });
             if (res.ok) {
-                mergeSeenEpisodes(slugs);
+                mergeSeenEpisodes(unwatchedSlugs);
             } else {
                 console.error('Error al marcar episodios');
             }
@@ -48,16 +56,24 @@ export default function EpisodeList({ episodes }: Props) {
     };
 
     const unmarkAllAsWatched = async () => {
-        const slugs = episodes.map(ep => ep.slug).slice(0, 100);
+        const seen = new Set(getSeenEpisodes());
+        const watchedSlugs = [...episodes]
+            .sort((a, b) => b.number - a.number) // Asegurar orden inverso para desmarcar los últimos
+            .map(ep => ep.slug)
+            .filter(slug => seen.has(slug))
+            .slice(0, 100);
+
+        if (watchedSlugs.length === 0) return;
+
         try {
             const res = await fetch('/api/anime/watched/batch', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ episodes: slugs })
+                body: JSON.stringify({ episodes: watchedSlugs })
             });
             if (res.ok) {
-                removeEpisodesFromLocal(slugs);
+                removeEpisodesFromLocal(watchedSlugs);
             } else {
                 console.error('Error al desmarcar episodios');
             }
