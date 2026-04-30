@@ -13,6 +13,18 @@ interface HeaderClientProps {
     user: AuthUser | null;
 }
 
+const getFirstChar = (str: string) => {
+    if (!str) return "";
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        const segmenter = new Intl.Segmenter('es', { granularity: 'grapheme' });
+        const segments = segmenter.segment(str);
+        for (const segment of segments) {
+            return segment.segment;
+        }
+    }
+    return Array.from(str)[0] || "";
+};
+
 export default function HeaderClient({ user }: HeaderClientProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const displayName = user?.display_name ?? user?.email ?? "Usuario";
@@ -62,7 +74,7 @@ export default function HeaderClient({ user }: HeaderClientProps) {
                                     title={displayName}
                                     aria-label={`Perfil de ${displayName}`}
                                 >
-                                    {Array.from(displayName)[0].toUpperCase()}
+                                    {getFirstChar(displayName).toUpperCase()}
                                 </span>
                             </summary>
                             <div className="absolute right-0 mt-2 w-48 rounded-xl border p-2 shadow-xl bg-background flex flex-col gap-1">
