@@ -8,8 +8,8 @@ import { mergeSeenEpisodes, removeEpisodesFromLocal, getSeenEpisodes } from '@/l
 function Badge({ children }: { children: React.ReactNode }) {
     return (
         <span className="inline-flex items-center rounded-full border bg-card/60 px-2.5 py-1 text-xs text-muted-foreground backdrop-blur">
-      {children}
-    </span>
+            {children}
+        </span>
     );
 }
 
@@ -106,14 +106,14 @@ export default function EpisodeList({ episodes }: Props) {
                         onClick={markAllAsWatched}
                         className="rounded-2xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent transition-colors cursor-pointer"
                     >
-                        Marcar todos
+                        Marcar 100
                     </button>
                     <button
                         type="button"
                         onClick={unmarkAllAsWatched}
                         className="rounded-2xl border bg-card px-3 py-2 text-sm font-medium hover:bg-accent transition-colors cursor-pointer"
                     >
-                        Desmarcar todos
+                        Desmarcar 100
                     </button>
                 </div>
             </div>
