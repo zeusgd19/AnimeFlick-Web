@@ -545,8 +545,9 @@ async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
     // Pattern: embeds:{SUB:[...],DUB:[...]},downloads:{SUB:[...],DUB:[...]}
     
     // Extract the full data block from the SvelteKit hydration script
-    const embedsMatch = html.match(/embeds:\{(SUB:\[.*?\](?:,DUB:\[.*?\])?)\}/);
-    const downloadsMatch = html.match(/downloads:\{(SUB:\[.*?\](?:,DUB:\[.*?\])?)\}/);
+    // Handle any combination: SUB only, DUB only, SUB+DUB, DUB+SUB
+    const embedsMatch = html.match(/embeds:\{((?:(?:SUB|DUB):\[.*?\])(?:,(?:SUB|DUB):\[.*?\])?)\}/);
+    const downloadsMatch = html.match(/downloads:\{((?:(?:SUB|DUB):\[.*?\])(?:,(?:SUB|DUB):\[.*?\])?)\}/);
 
     if (!embedsMatch) {
         throw new Error(`No embeds data found in AnimeAV1 page for ${slug} ep ${number}`);

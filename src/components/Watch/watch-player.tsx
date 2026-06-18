@@ -49,7 +49,9 @@ export default function WatchPlayer({
         return Array.from(variants);
     }, [servers, hasVariants]);
 
-    const [selectedVariant, setSelectedVariant] = useState<Variant>("SUB");
+    const [selectedVariant, setSelectedVariant] = useState<Variant>(
+        availableVariants.includes("SUB") ? "SUB" : availableVariants[0] ?? "SUB"
+    );
 
     // Filter servers by variant (or show all if no variant info)
     const filteredServers = useMemo(() => {
