@@ -442,7 +442,124 @@ export async function fetchSearchAnime(query: string, page = 1) {
     }
 }
 
+// ---------------------------------------------------------
+// AnimeAV1 Scraper (Temporary Primary Source for Embeds)
+// ---------------------------------------------------------
+const ANIMEAV1_BASE_URL = "https://animeav1.com";
+
+async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
+    const url = `${ANIMEAV1_BASE_URL}/media/${slug}/${number}`;
+    const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+
+    // The SvelteKit hydration script contains episode data inline.
+    // We need to extract the embeds and downloads objects from the script.
+    // Pattern: embeds:{SUB:[...],DUB:[...]},downloads:{SUB:[...],DUB:[...]}
+    
+    // Extract the full data block from the SvelteKit hydration script
+    const embedsMatch = html.match(/embeds:\{(SUB:\[.*?\](?:,DUB:\[.*?\])?)\}/);
+    const downloadsMatch = html.match(/downloads:\{(SUB:\[.*?\](?:,DUB:\[.*?\])?)\}/);
+
+    if (!embedsMatch) {
+        throw new Error(`No embeds data found in AnimeAV1 page for ${slug} ep ${number}`);
+    }
+
+    // Parse the embeds and downloads JSON-like structures
+    // They use {server:"name",url:"url"} format - we need to make it valid JSON
+    function parseServerArray(raw: string): Array<{ server: string; url: string }> {
+        try {
+            // Convert JS object notation to JSON: {server:"X",url:"Y"} -> {"server":"X","url":"Y"}
+            const jsonified = raw
+                .replace(/([{,])\s*(server|url)\s*:/g, '$1"$2":')
+                .replace(/void 0/g, 'null');
+            return JSON.parse(jsonified);
+        } catch {
+            return [];
+        }
+    }
+
+    function parseVariantBlock(rawBlock: string): Record<string, Array<{ server: string; url: string }>> {
+        const result: Record<string, Array<{ server: string; url: string }>> = {};
+        
+        // Match SUB:[...] and DUB:[...]
+        const variantRegex = /(SUB|DUB):\[(.*?)\](?=,(?:SUB|DUB):|$)/g;
+        let m;
+        while ((m = variantRegex.exec(rawBlock)) !== null) {
+            const variant = m[1];
+            const arrayContent = `[${m[2]}]`;
+            result[variant] = parseServerArray(arrayContent);
+        }
+        
+        return result;
+    }
+
+    const embeds = parseVariantBlock(embedsMatch[1]);
+    const downloads = downloadsMatch ? parseVariantBlock(downloadsMatch[1]) : {};
+
+    // Also try to extract the title from the page
+    const titleMatch = html.match(/<a[^>]*class="hover:underline"[^>]*>([^<]+)<\/a>/);
+    const title = titleMatch ? titleMatch[1].trim() : slug;
+
+    // Build ServerEpisode[] combining embeds and downloads per variant
+    const servers: Array<{ name: string; embed?: string; download?: string; variant?: "SUB" | "DUB" }> = [];
+
+    for (const variant of ["SUB", "DUB"] as const) {
+        const variantEmbeds = embeds[variant] ?? [];
+        const variantDownloads = downloads[variant] ?? [];
+
+        // Create a map of download URLs by server name
+        const downloadMap = new Map<string, string>();
+        for (const dl of variantDownloads) {
+            downloadMap.set(dl.server, dl.url);
+        }
+
+        // Add servers from embeds
+        for (const emb of variantEmbeds) {
+            servers.push({
+                name: emb.server,
+                embed: emb.url,
+                download: downloadMap.get(emb.server),
+                variant,
+            });
+            downloadMap.delete(emb.server); // Remove so we don't duplicate
+        }
+
+        // Add remaining download-only servers
+        for (const [serverName, dlUrl] of downloadMap) {
+            servers.push({
+                name: serverName,
+                download: dlUrl,
+                variant,
+            });
+        }
+    }
+
+    if (servers.length === 0) {
+        throw new Error(`No servers found in AnimeAV1 for ${slug} ep ${number}`);
+    }
+
+    return {
+        success: true,
+        data: {
+            title,
+            number,
+            servers,
+        },
+    };
+}
+
 export async function fetchServersEpisode(slug: string, number: number) {
+    // 1. Try AnimeAV1 first (temporary primary source)
+    try {
+        const result = await fetchEmbedsFromAnimeAV1(slug, number);
+        if (result && result.success && result.data.servers.length > 0) {
+            console.log(`[AnimeAV1] fetchServersEpisode OK for ${slug} ep ${number}`);
+            return result;
+        }
+    } catch (e) {
+        console.warn("[AnimeAV1] fetchServersEpisode failed:", e?.toString());
+    }
+
+    // 2. Fallback to AnimeFLV API
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/anime/${slug}/episode/${number}`;
@@ -451,8 +568,10 @@ export async function fetchServersEpisode(slug: string, number: number) {
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchServersEpisode failed:", e?.toString());
-        return await fallbackServersEpisode(slug, number);
     }
+
+    // 3. Fallback to TioAnime
+    return await fallbackServersEpisode(slug, number);
 }
 
 // ---------------------------------------------------------

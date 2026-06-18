@@ -34,7 +34,8 @@ export interface Episode {
 export interface ServerEpisode {
     name: string,
     download?: string,
-    embed?: string
+    embed?: string,
+    variant?: "SUB" | "DUB"
 }
 
 export interface ServerEpisodeData {

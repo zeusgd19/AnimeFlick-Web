@@ -121,6 +121,9 @@ export default async function WatchPage({
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         <Badge>▶ Watch</Badge>
                                         <Badge>Servers: {episode.servers?.length ?? 0}</Badge>
+                                        {episode.servers?.some((s) => s.variant === "DUB") && (
+                                            <Badge>🗣️ DUB disponible</Badge>
+                                        )}
                                         <Badge>Slug: {episodeSlug}</Badge>
                                     </div>
                                 </div>

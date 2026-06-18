@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { ServerEpisodeData, ServerEpisode } from "@/types/anime";
 
+type Variant = "SUB" | "DUB";
+
 function pickDefaultServer(servers: ServerEpisode[]) {
     // primero alguno con embed
     const withEmbed = servers.find((s) => !!s.embed);
@@ -36,15 +38,42 @@ export default function WatchPlayer({
 }) {
     const servers = episode.servers ?? [];
 
-    const defaultServer = useMemo(() => pickDefaultServer(servers), [servers]);
+    // Detect available variants
+    const hasVariants = servers.some((s) => !!s.variant);
+    const availableVariants = useMemo(() => {
+        if (!hasVariants) return [] as Variant[];
+        const variants = new Set<Variant>();
+        for (const s of servers) {
+            if (s.variant) variants.add(s.variant);
+        }
+        return Array.from(variants);
+    }, [servers, hasVariants]);
+
+    const [selectedVariant, setSelectedVariant] = useState<Variant>("SUB");
+
+    // Filter servers by variant (or show all if no variant info)
+    const filteredServers = useMemo(() => {
+        if (!hasVariants) return servers;
+        return servers.filter((s) => s.variant === selectedVariant);
+    }, [servers, hasVariants, selectedVariant]);
+
+    const defaultServer = useMemo(() => pickDefaultServer(filteredServers), [filteredServers]);
     const [selected, setSelected] = useState<ServerEpisode | null>(defaultServer);
+
+    // When variant changes, auto-select a good default
+    const handleVariantChange = (variant: Variant) => {
+        setSelectedVariant(variant);
+        const newFiltered = servers.filter((s) => s.variant === variant);
+        const newDefault = pickDefaultServer(newFiltered);
+        setSelected(newDefault);
+    };
 
     const embedUrl = selected?.embed ?? null;
 
     const host = getHost(embedUrl);
     const disableSandbox = shouldDisableSandboxFor(host);
 
-    const downloadable = servers.filter((s) => !!s.download);
+    const downloadable = filteredServers.filter((s) => !!s.download);
 
     async function copyLink() {
         const url = `${window.location.origin}/watch/${animeSlug}?ep=${episode.number}`;
@@ -117,18 +146,39 @@ export default function WatchPlayer({
                         </p>
                     </div>
                     <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-            {servers.length} disponibles
+            {filteredServers.length} disponibles
           </span>
                 </div>
 
+                {/* SUB / DUB variant tabs */}
+                {hasVariants && availableVariants.length > 1 && (
+                    <div className="mt-4 flex gap-1 rounded-2xl border bg-accent/30 p-1">
+                        {availableVariants.map((variant) => (
+                            <button
+                                key={variant}
+                                type="button"
+                                onClick={() => handleVariantChange(variant)}
+                                className={[
+                                    "flex-1 rounded-xl px-4 py-2 text-sm font-bold transition-all",
+                                    selectedVariant === variant
+                                        ? "bg-foreground text-background shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground",
+                                ].join(" ")}
+                            >
+                                {variant === "SUB" ? "🇯🇵 SUB" : "🗣️ DUB"}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <div className="mt-4 flex flex-wrap gap-2">
-                    {servers.map((s, idx) => {
-                        const active = selected?.name === s.name && selected?.embed === s.embed && selected?.download === s.download;
+                    {filteredServers.map((s, idx) => {
+                        const active = selected?.name === s.name && selected?.embed === s.embed && selected?.download === s.download && selected?.variant === s.variant;
                         const disabled = !s.embed && !s.download;
 
                         return (
                             <button
-                                key={`${s.name}-${idx}`}
+                                key={`${s.variant ?? ""}-${s.name}-${idx}`}
                                 type="button"
                                 disabled={disabled}
                                 onClick={() => setSelected(s)}
@@ -193,7 +243,7 @@ export default function WatchPlayer({
                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
                             {downloadable.map((s, i) => (
                                 <a
-                                    key={`${s.name}-dl-${i}`}
+                                    key={`${s.variant ?? ""}-${s.name}-dl-${i}`}
                                     href={s.download!}
                                     target="_blank"
                                     rel="noopener noreferrer"
