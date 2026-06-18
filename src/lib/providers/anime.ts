@@ -654,14 +654,35 @@ export async function fetchServersEpisode(slug: string, number: number) {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/anime/${slug}/episode/${number}`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-        if (res && res.success) return res;
-        throw new Error("Primary API returned invalid success");
+        const servers = res?.data?.servers;
+        const hasUsableServers = Array.isArray(servers) && servers.length > 0
+            && servers.some((s: any) => s.embed || s.download);
+        if (res && res.success && hasUsableServers) {
+            console.log(`[AnimeFLV] fetchServersEpisode OK for ${slug} ep ${number}`);
+            return res;
+        }
+        console.warn("[AnimeFLV] Response had no usable servers, skipping");
     } catch (e) {
-        console.warn("[Primary API] fetchServersEpisode failed:", e?.toString());
+        console.warn("[AnimeFLV] fetchServersEpisode failed:", e?.toString());
     }
 
     // 3. Fallback to TioAnime
-    return await fallbackServersEpisode(slug, number);
+    try {
+        const result = await fallbackServersEpisode(slug, number);
+        if (result && result.success && result.data.servers.length > 0) {
+            console.log(`[TioAnime] fetchServersEpisode OK for ${slug} ep ${number}`);
+            return result;
+        }
+    } catch (e) {
+        console.warn("[TioAnime] fetchServersEpisode failed:", e?.toString());
+    }
+
+    // All sources failed — return empty so the page shows error state
+    console.error(`[All] fetchServersEpisode FAILED for ${slug} ep ${number}`);
+    return {
+        success: true,
+        data: { title: slug, number, servers: [] },
+    };
 }
 
 // ---------------------------------------------------------
