@@ -447,9 +447,98 @@ export async function fetchSearchAnime(query: string, page = 1) {
 // ---------------------------------------------------------
 const ANIMEAV1_BASE_URL = "https://animeav1.com";
 
-async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
+// Cache for slug mappings: AnimeFLV slug -> AnimeAV1 slug
+const slugCache = new Map<string, string | null>();
+
+/**
+ * Search AnimeAV1 catalog to find the correct slug for an anime.
+ * AnimeFLV and AnimeAV1 use different slug formats (e.g. "nakamurakun" vs "nakamura-kun").
+ */
+async function resolveAnimeAV1Slug(animeFlvSlug: string): Promise<string | null> {
+    if (slugCache.has(animeFlvSlug)) {
+        return slugCache.get(animeFlvSlug) ?? null;
+    }
+
+    try {
+        // Convert slug to search query: "ganbare-nakamurakun" -> "ganbare nakamurakun"
+        const searchQuery = animeFlvSlug.replace(/-/g, " ");
+        const searchUrl = `${ANIMEAV1_BASE_URL}/catalogo?search=${encodeURIComponent(searchQuery)}`;
+        const html = await fetchHtmlFallback(searchUrl, { revalidate: 3600 }, 10000);
+
+        // Extract results from SvelteKit hydration data
+        // Pattern: results:[{...slug:"the-slug"...},...]
+        const resultsMatch = html.match(/results:\[(.*?)\],total:/);
+        if (!resultsMatch) {
+            slugCache.set(animeFlvSlug, null);
+            return null;
+        }
+
+        // Extract all slugs from the results
+        const slugMatches = resultsMatch[1].matchAll(/slug:"([^"]+)"/g);
+        const foundSlugs: string[] = [];
+        for (const m of slugMatches) {
+            foundSlugs.push(m[1]);
+        }
+
+        if (foundSlugs.length === 0) {
+            slugCache.set(animeFlvSlug, null);
+            return null;
+        }
+
+        // Try to find the best match:
+        // 1. Exact match
+        if (foundSlugs.includes(animeFlvSlug)) {
+            slugCache.set(animeFlvSlug, animeFlvSlug);
+            return animeFlvSlug;
+        }
+
+        // 2. Slug contains the original (e.g. "nakamura-kun" contains "nakamurakun" when normalized)
+        const normalizedInput = animeFlvSlug.replace(/-/g, "");
+        for (const s of foundSlugs) {
+            const normalizedCandidate = s.replace(/-/g, "");
+            if (normalizedCandidate === normalizedInput) {
+                slugCache.set(animeFlvSlug, s);
+                console.log(`[AnimeAV1] Resolved slug "${animeFlvSlug}" -> "${s}"`);
+                return s;
+            }
+        }
+
+        // 3. First result as best guess
+        const bestGuess = foundSlugs[0];
+        slugCache.set(animeFlvSlug, bestGuess);
+        console.log(`[AnimeAV1] Best guess slug "${animeFlvSlug}" -> "${bestGuess}"`);
+        return bestGuess;
+    } catch (e) {
+        console.warn("[AnimeAV1] resolveAnimeAV1Slug failed:", e?.toString());
+        slugCache.set(animeFlvSlug, null);
+        return null;
+    }
+}
+
+async function fetchAnimeAV1Page(slug: string, number: number) {
     const url = `${ANIMEAV1_BASE_URL}/media/${slug}/${number}`;
-    const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+    return await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+}
+
+async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
+    let html: string;
+
+    try {
+        // First try with the slug as-is
+        html = await fetchAnimeAV1Page(slug, number);
+    } catch (directError: any) {
+        // If 404, try to resolve the correct slug via search
+        if (directError?.message?.includes("404")) {
+            console.log(`[AnimeAV1] Slug "${slug}" not found, searching...`);
+            const resolvedSlug = await resolveAnimeAV1Slug(slug);
+            if (!resolvedSlug || resolvedSlug === slug) {
+                throw new Error(`AnimeAV1: slug "${slug}" not found and could not resolve`);
+            }
+            html = await fetchAnimeAV1Page(resolvedSlug, number);
+        } else {
+            throw directError;
+        }
+    }
 
     // The SvelteKit hydration script contains episode data inline.
     // We need to extract the embeds and downloads objects from the script.
