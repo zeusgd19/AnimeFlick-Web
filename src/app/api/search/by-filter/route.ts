@@ -4,16 +4,24 @@ import { Anime } from "@/types/anime";
 
 export async function POST(req: Request) {
     try {
+        const url = new URL(req.url);
+        const order = url.searchParams.get("order") || "default";
+        const page = parseInt(url.searchParams.get("page") || "1", 10);
         const body = await req.json();
-        const type = body?.type;
 
-        if (!type) {
-            return NextResponse.json({ error: "Missing 'type'" }, { status: 400 });
-        }
+        // Si viene body.type, usamos ese (legado), si no, pasamos el body como AnimeFilterParams
+        const filterParams = body?.type ? body.type : {
+            types: body.types || [],
+            genres: body.genres || [],
+            statuses: body.statuses || [],
+            page: page,
+            order: order
+        };
 
-        const data = await fetchAnimesByFilter(type);
+        const data = await fetchAnimesByFilter(filterParams);
 
-        const media = data.media;
+        const media = data?.data?.media || data?.media;
+
         const animeModified = media.find((anime: Anime) => anime.title === "Kakkou no Iinazuke");
 
         if (animeModified) {
