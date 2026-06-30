@@ -5,6 +5,7 @@ import withPWA from 'next-pwa';
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  serverExternalPackages: ['fsevents', '@babel/preset-typescript']
 };
 
 export default withPWA({
