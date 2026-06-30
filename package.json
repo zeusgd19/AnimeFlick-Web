@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@consumet/extensions": "^1.8.8",
-    "@vercel/analytics": "^1.6.1",
     "cheerio": "^1.2.0",
     "lucide-react": "^0.562.0",
     "monoschinos": "^0.5.1",
