@@ -297,7 +297,7 @@ async function fallbackServersEpisode(slug: string, number: number) {
 
 export async function fetchLatestEpisodesFromExternal() {
     try {
-        const base = process.env.EXTERNAL_API_BASE!;
+        const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/latest-episodes`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
         if (res && res.success) return res;
@@ -310,7 +310,7 @@ export async function fetchLatestEpisodesFromExternal() {
 
 export async function fetchAnimesOnAir() {
     try {
-        const base = process.env.EXTERNAL_API_BASE!;
+        const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/animes-on-air`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
