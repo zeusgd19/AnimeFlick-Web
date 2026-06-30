@@ -14,7 +14,7 @@ const config = {
     },
   },
   build: {
-    esbuildOptions: (options) => {
+    esbuildOptions: (options: any) => {
       options.external = [
         ...(options.external || []), 
         'fsevents', 
