@@ -15,7 +15,12 @@ export async function GET(req: NextRequest) {
 
     try {
         const data = await fetchSearchAnime(query, page);
-        return NextResponse.json(data, { status: 200 });
+        return NextResponse.json(data, {
+            status: 200,
+            headers: {
+                "Cache-Control": "public, s-maxage=600, stale-while-revalidate=60",
+            },
+        });
     } catch (e: any) {
         return NextResponse.json(
             { success: false, message: e?.message ?? "Error" },

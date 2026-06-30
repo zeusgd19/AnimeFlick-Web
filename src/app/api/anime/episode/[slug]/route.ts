@@ -20,7 +20,12 @@ export async function GET(
 
     try {
         const data = await fetchServersEpisode(animeSlug, episodeNumber);
-        return NextResponse.json(data, { status: 200 });
+        return NextResponse.json(data, {
+            status: 200,
+            headers: {
+                "Cache-Control": "public, s-maxage=600, stale-while-revalidate=60",
+            },
+        });
     } catch (e: any) {
         return NextResponse.json(
             { success: false, message: e?.message ?? "Error" },

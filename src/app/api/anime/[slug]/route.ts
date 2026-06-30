@@ -10,7 +10,12 @@ export async function GET(
 
     try {
         const data = await fetchAnimeBySlug(slug);
-        return NextResponse.json(data, { status: 200 });
+        return NextResponse.json(data, {
+            status: 200,
+            headers: {
+                "Cache-Control": "public, s-maxage=900, stale-while-revalidate=120",
+            },
+        });
     } catch (e: any) {
         return NextResponse.json(
             { success: false, message: e?.message ?? "Error" },
