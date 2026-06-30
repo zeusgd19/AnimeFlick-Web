@@ -4,17 +4,36 @@ import type { SignInResponse } from "@/types/user";
 export async function POST(req: Request) {
     const body = await req.json();
     const base = process.env.EXTERNAL_USER_API_BASE!;
-    const r = await fetch(`${base}/auth/signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        cache: "no-store",
-    });
-    console.log(r)
-    const data: SignInResponse = await r.json();
+    let data: SignInResponse | null = null;
+    let fetchError: any = null;
+    let r: Response | null = null;
 
+    try {
+        r = await fetch(`${base}/auth/signin`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            cache: "no-store",
+        });
+        
+        const rawText = await r.text();
+        try {
+            data = JSON.parse(rawText) as SignInResponse;
+        } catch (e) {
+            fetchError = `Failed to parse JSON. Raw response: ${rawText.substring(0, 200)}...`;
+        }
+    } catch (e: any) {
+        fetchError = e.message || String(e);
+    }
 
-    if (!r.ok || !data.access_token || !data.user) {
+    if (fetchError || !r) {
+        return NextResponse.json(
+            { success: false, message: "Server fetch error", error: fetchError, base },
+            { status: 500 }
+        );
+    }
+
+    if (!r.ok || !data || !data.access_token || !data.user) {
         return NextResponse.json(
             { success: false, message: data?.status ?? "Invalid credentials" },
             { status: 401 }
