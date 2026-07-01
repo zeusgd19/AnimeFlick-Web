@@ -297,6 +297,12 @@ async function fallbackServersEpisode(slug: string, number: number) {
 
 export async function fetchLatestEpisodesFromExternal() {
     try {
+        const fallbackRes = await fallbackLatestEpisodes();
+        if (fallbackRes && fallbackRes.success) return fallbackRes;
+    } catch (f) {
+        console.warn("[TioAnime] fallbackLatestEpisodes failed:", f?.toString());
+    }
+    try {
         const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/latest-episodes`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
@@ -304,59 +310,51 @@ export async function fetchLatestEpisodesFromExternal() {
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchLatestEpisodesFromExternal failed:", e?.toString());
-        try { return await fallbackLatestEpisodes(); } catch (f) { return null; }
+        return null;
     }
 }
 
 export async function fetchAnimesOnAir() {
+    try {
+        const fallbackRes = await fallbackAnimesOnAir();
+        if (fallbackRes && fallbackRes.success) return fallbackRes;
+    } catch (f) {
+        console.warn("[TioAnime] fallbackAnimesOnAir failed:", f?.toString());
+    }
     try {
         const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/animes-on-air`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
         if (res && res.success) {
-            const animeModified = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
-            const kakkouNoIinazukeSeasonTwo = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
-            if (animeModified) {
-                animeModified.title = "La gayola a mi cuco";
-                animeModified.synopsis = "Hazte una gayola mi cucooo!!";
-            }
-            if (kakkouNoIinazukeSeasonTwo) {
-                kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
-                kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
-            }
             return res;
         }
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchAnimesOnAir failed:", e?.toString());
-        try { return await fallbackAnimesOnAir(); } catch (f) { return null; }
+        return null;
     }
 }
 
 export async function fetchAnimeBySlug(slug: string) {
+    try {
+        const fallbackRes = await fallbackAnimeBySlug(slug);
+        if (fallbackRes && fallbackRes.success) return fallbackRes;
+    } catch (f) {
+        console.warn("[TioAnime] fallbackAnimeBySlug failed:", f?.toString());
+    }
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/anime/${encodeURIComponent(slug)}`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
         if (res && res.success) {
-            const kakkouNoIinazuke = res?.data?.title === "Kakkou no Iinazuke";
-            const kakkouNoIinazukeSeasonTwo = res?.data?.title === "Kakkou no Iinazuke Season 2";
-            if (kakkouNoIinazuke) {
-                res.data.title = "La gayola a mi cuco";
-                res.data.synopsis = "Hazte una gayola mi cucooo!!";
-            }
-            if (kakkouNoIinazukeSeasonTwo) {
-                res.data.title = "La gayola a mi cuco 2";
-                res.data.synopsis = "Hazte una segunda gayola mi cucooo!!";
-            }
             return res;
         }
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchAnimeBySlug failed:", e?.toString());
-        return await fallbackAnimeBySlug(slug);
+        return null;
     }
 }
 
@@ -372,6 +370,12 @@ export type AnimeFilterParams = {
 export async function fetchAnimesByFilter(type: RealAnimeType, page?: number): Promise<any>;
 export async function fetchAnimesByFilter(params: AnimeFilterParams): Promise<any>;
 export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
+    try {
+        const fallbackRes = await fallbackAnimesByFilter(arg1, arg2);
+        if (fallbackRes && fallbackRes.success) return fallbackRes;
+    } catch (f) {
+        console.warn("[TioAnime] fallbackAnimesByFilter failed:", f?.toString());
+    }
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const isLegacy = typeof arg1 === "string";
@@ -397,48 +401,34 @@ export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParam
         });
 
         if (res && res.success) {
-            const animeMofied = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
-            const kakkouNoIinazukeSeasonTwo = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
-            if (animeMofied) {
-                animeMofied.title = "La gayola a mi cuco";
-                animeMofied.synopsis = "Hazte una gayola mi cucooo!!";
-            }
-            if (kakkouNoIinazukeSeasonTwo) {
-                kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
-                kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
-            }
             return res;
         }
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchAnimesByFilter failed:", e?.toString());
-        try { return await fallbackAnimesByFilter(arg1, arg2); } catch (f) { return null; }
+        return null;
     }
 }
 
 export async function fetchSearchAnime(query: string, page = 1) {
+    try {
+        const fallbackRes = await fallbackSearchAnime(query, page);
+        if (fallbackRes && fallbackRes.success) return fallbackRes;
+    } catch (f) {
+        console.warn("[TioAnime] fallbackSearchAnime failed:", f?.toString());
+    }
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/search?query=${encodeURIComponent(query)}&page=${page}`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
 
         if (res && res.success) {
-            const animeModified = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke");
-            const kakkouNoIinazukeSeasonTwo = res?.data?.media?.find((a: any) => a.title === "Kakkou no Iinazuke Season 2");
-            if (animeModified) {
-                animeModified.title = "La gayola a mi cuco";
-                animeModified.synopsis = "Hazte una gayola mi cucooo!!";
-            }
-            if (kakkouNoIinazukeSeasonTwo) {
-                kakkouNoIinazukeSeasonTwo.title = "La gayola a mi cuco 2";
-                kakkouNoIinazukeSeasonTwo.synopsis = "Hazte una segunda gayola mi cucooo!!";
-            }
             return res;
         }
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchSearchAnime failed:", e?.toString());
-        try { return await fallbackSearchAnime(query, page); } catch (f) { return null; }
+        return null;
     }
 }
 
@@ -649,7 +639,18 @@ export async function fetchServersEpisode(slug: string, number: number) {
         console.warn("[AnimeAV1] fetchServersEpisode failed:", e?.toString());
     }
 
-    // 2. Fallback to AnimeFLV API
+    // 2. Try TioAnime (NEW Primary)
+    try {
+        const result = await fallbackServersEpisode(slug, number);
+        if (result && result.success && result.data.servers.length > 0) {
+            console.log(`[TioAnime] fetchServersEpisode OK for ${slug} ep ${number}`);
+            return result;
+        }
+    } catch (e) {
+        console.warn("[TioAnime] fetchServersEpisode failed:", e?.toString());
+    }
+
+    // 3. Fallback to AnimeFLV API
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/anime/${slug}/episode/${number}`;
@@ -664,17 +665,6 @@ export async function fetchServersEpisode(slug: string, number: number) {
         console.warn("[AnimeFLV] Response had no usable servers, skipping");
     } catch (e) {
         console.warn("[AnimeFLV] fetchServersEpisode failed:", e?.toString());
-    }
-
-    // 3. Fallback to TioAnime
-    try {
-        const result = await fallbackServersEpisode(slug, number);
-        if (result && result.success && result.data.servers.length > 0) {
-            console.log(`[TioAnime] fetchServersEpisode OK for ${slug} ep ${number}`);
-            return result;
-        }
-    } catch (e) {
-        console.warn("[TioAnime] fetchServersEpisode failed:", e?.toString());
     }
 
     // All sources failed — return empty so the page shows error state
