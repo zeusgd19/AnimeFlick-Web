@@ -7,7 +7,7 @@ export async function GET() {
     const data = await fetchAnimesOnAir();
     return NextResponse.json(data, {
         headers: {
-            "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=300",
+            "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=300",
         },
     });
 }

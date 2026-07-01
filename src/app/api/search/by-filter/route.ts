@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json(data, {
             headers: {
-                "Cache-Control": "public, s-maxage=600, stale-while-revalidate=60",
+                "Cache-Control": "public, max-age=600, s-maxage=600, stale-while-revalidate=60",
             },
         });
     } catch (e) {

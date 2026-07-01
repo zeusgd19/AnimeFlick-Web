@@ -22,3 +22,5 @@ try {
 } catch (e) {}
 
 export default config;
+
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
