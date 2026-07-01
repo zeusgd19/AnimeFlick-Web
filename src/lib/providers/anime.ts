@@ -154,13 +154,14 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
         const urlPath = $(el).find('a').attr('href') || "";
         const img = $(el).find('img').attr('src') || "";
         const slug = urlPath.split('/').pop() || "";
+        const typeBadge = $(el).find('span[class^="anime-type-"]').text().trim() || "Anime";
 
         media.push({
             title,
             slug,
             cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
-            type: "TV",
+            type: typeBadge === "TV" ? "Anime" : typeBadge
         });
     });
 
@@ -196,13 +197,14 @@ async function fallbackSearchAnime(query: string, page = 1) {
         const urlPath = $(el).find('a').attr('href') || "";
         const img = $(el).find('img').attr('src') || "";
         const slug = urlPath.split('/').pop() || "";
+        const typeBadge = $(el).find('span[class^="anime-type-"]').text().trim() || "Anime";
 
         media.push({
             title,
             slug,
             cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
-            type: "TV",
+            type: typeBadge === "TV" ? "Anime" : typeBadge
         });
     });
 
@@ -215,45 +217,56 @@ async function fallbackSearchAnime(query: string, page = 1) {
 }
 
 async function fallbackAnimeBySlug(slug: string) {
-    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/anime/${slug}`, { revalidate: 300 });
+    const url = `${TIO_BASE_URL}/anime/${slug}`;
+    const html = await fetchHtmlFallback(url, { revalidate: 300 });
     const $ = cheerio.load(html);
 
     const title = $('h1.title').text().trim();
     const synopsis = $('.sinopsis').text().trim();
-    const cover = TIO_BASE_URL + $('.thumb img').attr('src');
-    const rating = "4.5";
+    const statusText = $('.fa-play-circle').parent().text().trim() || "Finalizado";
+    let status = "0"; // Default finished
+    if (statusText.toLowerCase().includes("emision")) status = "1";
+    
+    const rating = $('#score').text().trim() || "0";
+    const genres: string[] = [];
+    $('.genres a').each((_, el) => {
+        genres.push($(el).text().trim());
+    });
 
-    let episodesData: number[] = [];
-    const scriptTags = $('script').map((i, el) => $(el).html()).get();
-    for (const script of scriptTags) {
-        if (script && script.includes('var episodes = ')) {
-            const match = script.match(/var episodes = (\[.*?\]);/);
-            if (match) {
-                try {
-                    episodesData = JSON.parse(match[1]);
-                } catch(e) {}
-            }
-        }
+    const nextEpisodeMatch = html.match(/Proximo episodio:\s*<span>(.*?)<\/span>/);
+    const next_airing_episode = nextEpisodeMatch ? nextEpisodeMatch[1] : null;
+
+    const coverPath = $('.backdrop img').attr('src') || "";
+    const cover = `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
+
+    const episodes: any[] = [];
+    const scriptMatch = html.match(/var episodes = (\[.*?\]);/);
+    if (scriptMatch) {
+        try {
+            const epNums = JSON.parse(scriptMatch[1]);
+            epNums.forEach((num: number) => {
+                episodes.push({
+                    number: num,
+                    url: `${slug}-${num}`,
+                    slug: `${slug}-${num}`
+                });
+            });
+        } catch(e) {}
     }
 
-    const episodes = episodesData.map(num => ({
-        number: num,
-        title: `Episodio ${num}`,
-        image: cover,
-        slug: `${slug}-${num}`,
-        url: `${TIO_BASE_URL}/ver/${slug}-${num}`
-    }));
-
-    const result = {
-        title,
-        synopsis,
-        cover,
-        slug,
-        rating,
-        episodes
+    return {
+        success: true,
+        data: {
+            title,
+            cover,
+            synopsis,
+            status,
+            rating,
+            genres,
+            next_airing_episode,
+            episodes
+        }
     };
-
-    return { success: true, data: result };
 }
 
 async function fallbackServersEpisode(slug: string, number: number) {
