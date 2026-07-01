@@ -80,7 +80,7 @@ async function fallbackLatestEpisodes() {
             title,
             slug: fullSlug,
             number: episode,
-            cover: TIO_BASE_URL + img,
+            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             url: fullSlug, 
         });
     });
@@ -102,8 +102,8 @@ async function fallbackAnimesOnAir() {
         data.push({
             title,
             slug,
-            cover: TIO_BASE_URL + img,
-            type: "tv",
+            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            type: "TV",
         });
     });
 
@@ -200,8 +200,9 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
         media.push({
             title,
             slug,
-            cover: TIO_BASE_URL + img,
+            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
+            type: "TV",
         });
     });
 
@@ -241,8 +242,9 @@ async function fallbackSearchAnime(query: string, page = 1) {
         media.push({
             title,
             slug,
-            cover: TIO_BASE_URL + img,
+            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
+            type: "TV",
         });
     });
 
@@ -250,6 +252,62 @@ async function fallbackSearchAnime(query: string, page = 1) {
         success: true,
         data: {
             media
+        }
+    };
+}
+
+async function fallbackAnimeBySlug(slug: string) {
+    const url = `${TIO_BASE_URL}/anime/${slug}`;
+    const html = await fetchHtmlFallback(url, { revalidate: 300 });
+    const $ = cheerio.load(html);
+
+    const title = $('h1.title').text().trim();
+    const synopsis = $('.sinopsis').text().trim();
+    const statusText = $('.fa-play-circle').parent().text().trim() || "Finalizado";
+    let status = "0"; // Default finished
+    if (statusText.toLowerCase().includes("emision")) status = "1";
+    
+    const rating = $('#score').text().trim() || "0";
+    const genres: string[] = [];
+    $('.genres a').each((_, el) => {
+        genres.push($(el).text().trim());
+    });
+
+    // Extract next episode date
+    const nextEpisodeMatch = html.match(/Proximo episodio:\s*<span>(.*?)<\/span>/);
+    const next_airing_episode = nextEpisodeMatch ? nextEpisodeMatch[1] : null;
+
+    // Extract cover
+    const coverPath = $('.backdrop img').attr('src') || "";
+    const cover = `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
+
+    // Extract episodes from script tag
+    const episodes: any[] = [];
+    const scriptMatch = html.match(/var episodes = (\[.*?\]);/);
+    if (scriptMatch) {
+        try {
+            const epNums = JSON.parse(scriptMatch[1]);
+            epNums.forEach((num: number) => {
+                episodes.push({
+                    number: num,
+                    url: `${slug}-${num}`,
+                    slug: `${slug}-${num}`
+                });
+            });
+        } catch(e) {}
+    }
+
+    return {
+        success: true,
+        data: {
+            title,
+            cover,
+            synopsis,
+            status,
+            rating,
+            genres,
+            next_airing_episode,
+            episodes
         }
     };
 }
