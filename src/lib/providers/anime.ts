@@ -227,7 +227,23 @@ async function fallbackAnimeBySlug(slug: string) {
     const status = statusText;
     
     const type = $('.meta span[class^="anime-type-"]').text().trim() || "Anime";
-    const rating = $('#score').text().trim() || "0";
+    let rating = $('#score').text().trim() || "0";
+    if (rating === "N/A" || rating === "0") {
+        const jikanMatch = html.match(/fetch\('(https:\/\/api\.jikan\.moe[^']+)'\)/);
+        if (jikanMatch) {
+            try {
+                const jikanRes = await fetch(jikanMatch[1], { next: { revalidate: 3600 } });
+                if (jikanRes.ok) {
+                    const jikanData = await jikanRes.json();
+                    if (jikanData?.data?.score) {
+                        rating = jikanData.data.score.toString();
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch jikan rating", e);
+            }
+        }
+    }
     const genres: string[] = [];
     $('.genres a').each((_, el) => {
         genres.push($(el).text().trim());
