@@ -110,48 +110,6 @@ async function fallbackAnimesOnAir() {
     return { success: true, data: data.slice(0, 20) };
 }
 
-async function fallbackAnimeBySlug(slug: string) {
-    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/anime/${slug}`, { revalidate: 300 });
-    const $ = cheerio.load(html);
-
-    const title = $('h1.title').text().trim();
-    const synopsis = $('.sinopsis').text().trim();
-    const cover = TIO_BASE_URL + $('.thumb img').attr('src');
-    const rating = "4.5";
-    
-    let episodesData: number[] = [];
-    const scriptTags = $('script').map((i, el) => $(el).html()).get();
-    for (const script of scriptTags) {
-        if (script && script.includes('var episodes = ')) {
-            const match = script.match(/var episodes = (\[.*?\]);/);
-            if (match) {
-                try {
-                    episodesData = JSON.parse(match[1]);
-                } catch(e) {}
-            }
-        }
-    }
-
-    const episodes = episodesData.map(num => ({
-        number: num,
-        title: `Episodio ${num}`,
-        image: cover,
-        slug: `${slug}-${num}`,
-        url: `${TIO_BASE_URL}/ver/${slug}-${num}`
-    }));
-
-    const result = {
-        title,
-        synopsis,
-        cover,
-        slug,
-        rating,
-        episodes
-    };
-
-    return { success: true, data: result };
-}
-
 async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
     const isLegacy = typeof arg1 === "string";
     const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
@@ -257,59 +215,45 @@ async function fallbackSearchAnime(query: string, page = 1) {
 }
 
 async function fallbackAnimeBySlug(slug: string) {
-    const url = `${TIO_BASE_URL}/anime/${slug}`;
-    const html = await fetchHtmlFallback(url, { revalidate: 300 });
+    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/anime/${slug}`, { revalidate: 300 });
     const $ = cheerio.load(html);
 
     const title = $('h1.title').text().trim();
     const synopsis = $('.sinopsis').text().trim();
-    const statusText = $('.fa-play-circle').parent().text().trim() || "Finalizado";
-    let status = "0"; // Default finished
-    if (statusText.toLowerCase().includes("emision")) status = "1";
-    
-    const rating = $('#score').text().trim() || "0";
-    const genres: string[] = [];
-    $('.genres a').each((_, el) => {
-        genres.push($(el).text().trim());
-    });
+    const cover = TIO_BASE_URL + $('.thumb img').attr('src');
+    const rating = "4.5";
 
-    // Extract next episode date
-    const nextEpisodeMatch = html.match(/Proximo episodio:\s*<span>(.*?)<\/span>/);
-    const next_airing_episode = nextEpisodeMatch ? nextEpisodeMatch[1] : null;
-
-    // Extract cover
-    const coverPath = $('.backdrop img').attr('src') || "";
-    const cover = `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
-
-    // Extract episodes from script tag
-    const episodes: any[] = [];
-    const scriptMatch = html.match(/var episodes = (\[.*?\]);/);
-    if (scriptMatch) {
-        try {
-            const epNums = JSON.parse(scriptMatch[1]);
-            epNums.forEach((num: number) => {
-                episodes.push({
-                    number: num,
-                    url: `${slug}-${num}`,
-                    slug: `${slug}-${num}`
-                });
-            });
-        } catch(e) {}
+    let episodesData: number[] = [];
+    const scriptTags = $('script').map((i, el) => $(el).html()).get();
+    for (const script of scriptTags) {
+        if (script && script.includes('var episodes = ')) {
+            const match = script.match(/var episodes = (\[.*?\]);/);
+            if (match) {
+                try {
+                    episodesData = JSON.parse(match[1]);
+                } catch(e) {}
+            }
+        }
     }
 
-    return {
-        success: true,
-        data: {
-            title,
-            cover,
-            synopsis,
-            status,
-            rating,
-            genres,
-            next_airing_episode,
-            episodes
-        }
+    const episodes = episodesData.map(num => ({
+        number: num,
+        title: `Episodio ${num}`,
+        image: cover,
+        slug: `${slug}-${num}`,
+        url: `${TIO_BASE_URL}/ver/${slug}-${num}`
+    }));
+
+    const result = {
+        title,
+        synopsis,
+        cover,
+        slug,
+        rating,
+        episodes
     };
+
+    return { success: true, data: result };
 }
 
 async function fallbackServersEpisode(slug: string, number: number) {
