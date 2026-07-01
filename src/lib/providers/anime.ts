@@ -224,9 +224,9 @@ async function fallbackAnimeBySlug(slug: string) {
     const title = $('h1.title').text().trim();
     const synopsis = $('.sinopsis').text().trim();
     const statusText = $('.fa-play-circle').parent().text().trim() || "Finalizado";
-    let status = "0"; // Default finished
-    if (statusText.toLowerCase().includes("emision")) status = "1";
+    const status = statusText;
     
+    const type = $('.meta span[class^="anime-type-"]').text().trim() || "Anime";
     const rating = $('#score').text().trim() || "0";
     const genres: string[] = [];
     $('.genres a').each((_, el) => {
@@ -236,7 +236,7 @@ async function fallbackAnimeBySlug(slug: string) {
     const nextEpisodeMatch = html.match(/Proximo episodio:\s*<span>(.*?)<\/span>/);
     const next_airing_episode = nextEpisodeMatch ? nextEpisodeMatch[1] : null;
 
-    const coverPath = $('.backdrop img').attr('src') || "";
+    const coverPath = $('.thumb img').attr('src') || "";
     const cover = `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
 
     const episodes: any[] = [];
@@ -261,6 +261,7 @@ async function fallbackAnimeBySlug(slug: string) {
             cover,
             synopsis,
             status,
+            type,
             rating,
             genres,
             next_airing_episode,
