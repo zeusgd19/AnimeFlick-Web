@@ -82,7 +82,8 @@ export interface AnimeOnAir{
     title: string,
     type: AnimeType,
     slug: string,
-    url: string
+    url: string,
+    cover: string
 }
 
 export interface AnimeOnAirComplete{

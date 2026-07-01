@@ -2,7 +2,6 @@
 import Link from "next/link";
 import Header from "@/components/Header/header";
 import {
-    fetchAnimeBySlug,
     fetchAnimesByFilter,
     fetchAnimesOnAir,
     fetchLatestEpisodesFromExternal,
@@ -10,7 +9,6 @@ import {
 import type {
     AnimeOnAir,
     AnimeOnAirComplete,
-    AnimeResponse,
     FilteredAnime,
     RealAnimeType,
     RecentEpisode,
@@ -151,20 +149,13 @@ export default async function HomePage({
     const latestEpisodes: LatestEpisodesResponse | null = !typeValid ? await fetchLatestEpisodesFromExternal() : null;
     const animesOnAirResponse: OnAirResponse | null = !typeValid ? await fetchAnimesOnAir() : null;
 
-    // ✅ construir covers sólo si hay onAir
+    // ✅ construir covers directamente desde los datos on-air (ya incluyen cover)
     const animes: AnimeOnAirComplete[] =
         animesOnAirResponse?.data?.length
-            ? await Promise.all(
-                animesOnAirResponse.data.map(async (animeOnAir: AnimeOnAir) => {
-                    try {
-                        const anime: AnimeResponse = await fetchAnimeBySlug(animeOnAir.slug);
-                        return { anime: animeOnAir, cover: anime.data.cover };
-                    } catch {
-                        // fallback: si el detalle falla, usa cover vacío o un placeholder
-                        return { anime: animeOnAir, cover: "" };
-                    }
-                })
-            )
+            ? animesOnAirResponse.data.map((animeOnAir: AnimeOnAir) => ({
+                anime: animeOnAir,
+                cover: animeOnAir.cover || ""
+            }))
             : [];
 
     return (
