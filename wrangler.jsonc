@@ -23,5 +23,10 @@
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
+	},
+	"vars": {
+		"EXTERNAL_API_BASE": "https://animeflv.ahmedrangel.com",
+		"EXTERNAL_USER_API_BASE": "https://zeusgd19.pythonanywhere.com"
+		// BREVO_API_KEY va como secret: wrangler secret put BREVO_API_KEY
 	}
 }

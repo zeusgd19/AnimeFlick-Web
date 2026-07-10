@@ -9,6 +9,7 @@ import Footer from "@/components/Footer/footer";
 import EpisodeSeenToggle from "@/components/Episode/episode-seen-toogle";
 import EpisodePill from "@/components/Episode/episode-pill";
 import {EpisodeSeenRow} from "@/components/Episode/episode-seen-row";
+import { encodeSlug, decodeSlug } from "@/lib/utils/slug";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -18,7 +19,7 @@ function Badge({ children }: { children: React.ReactNode }) {
     );
 }
 
-function ErrorState({ slug }: { slug: string }) {
+function ErrorState({ encodedSlug }: { encodedSlug: string }) {
     return (
         <div className="mt-6 rounded-3xl border bg-card p-6">
             <h2 className="text-lg font-semibold">No se ha podido cargar el episodio</h2>
@@ -27,7 +28,7 @@ function ErrorState({ slug }: { slug: string }) {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
                 <Link
-                    href={`/watch/${slug}`}
+                    href={`/watch/${encodedSlug}`}
                     className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
                 >
                     Reintentar
@@ -49,7 +50,8 @@ export default async function WatchPage({
     params: Promise<{ slug: string }>;
 }) {
     const p = await params;
-    const episodeSlug = p.slug;
+    const encodedSlug = p.slug;
+    const episodeSlug = decodeSlug(encodedSlug);
 
     // Parse
     let animeSlug: string | null = null;
@@ -78,9 +80,9 @@ export default async function WatchPage({
 
     // Navigation (solo si tenemos datos)
     const prevSlug =
-        animeSlug && episodeNumber ? `${animeSlug}-${Math.max(1, episodeNumber - 1)}` : null;
+        animeSlug && episodeNumber ? encodeSlug(`${animeSlug}-${Math.max(1, episodeNumber - 1)}`) : null;
     const nextSlug =
-        animeSlug && episodeNumber ? `${animeSlug}-${episodeNumber + 1}` : null;
+        animeSlug && episodeNumber ? encodeSlug(`${animeSlug}-${episodeNumber + 1}`) : null;
 
     const canRenderPage = !!animeSlug && !!episodeNumber && !!episode;
 
@@ -104,7 +106,7 @@ export default async function WatchPage({
                                     Inicio
                                 </Link>
                                 <span>/</span>
-                                <Link href={`/anime/${animeSlug}`} className="hover:text-foreground">
+                                <Link href={`/anime/${encodeSlug(animeSlug!)}`} className="hover:text-foreground">
                                     {episode.title}
                                 </Link>
                                 <span>/</span>
@@ -124,7 +126,6 @@ export default async function WatchPage({
                                         {episode.servers?.some((s) => s.variant === "DUB") && (
                                             <Badge>🗣️ DUB disponible</Badge>
                                         )}
-                                        <Badge>Slug: {episodeSlug}</Badge>
                                     </div>
                                 </div>
 
@@ -175,7 +176,7 @@ export default async function WatchPage({
 
                                     <div className="mt-5 flex gap-2 mb-5">
                                         <Link
-                                            href={`/anime/${animeSlug!}`}
+                                            href={`/anime/${encodeSlug(animeSlug!)}`}
                                             className="flex-1 rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
                                         >
                                             Detalles
@@ -206,16 +207,16 @@ export default async function WatchPage({
                                     Inicio
                                 </Link>{" "}
                                 <span>/</span>{" "}
-                                <Link href={`/anime/${animeSlug}`} className="hover:text-foreground">
+                                <Link href={`/anime/${encodeSlug(animeSlug!)}`} className="hover:text-foreground">
                                     Anime
                                 </Link>{" "}
                                 <span>/</span>{" "}
                                 <span className="text-foreground">Episodio {episodeNumber}</span>
                             </div>
-                            <ErrorState slug={episodeSlug} />
+                            <ErrorState encodedSlug={encodedSlug} />
                         </>
                     ) : (
-                        <ErrorState slug={episodeSlug} />
+                        <ErrorState encodedSlug={encodedSlug} />
                     )}
                 </main>
             )}

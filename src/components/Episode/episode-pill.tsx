@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Episode } from "@/types/anime";
 import EpisodeSeenToggle from "./episode-seen-toogle";
+import { encodeSlug } from "@/lib/utils/slug";
 
 type Props = {
     ep: Episode;
@@ -26,7 +27,7 @@ export default function EpisodePill({ ep }: Props) {
 
                 {/* ▶️ Ver */}
                 <Link
-                    href={`/watch/${ep.slug}`}
+                    href={`/watch/${encodeSlug(ep.slug)}`}
                     className="rounded-xl bg-foreground px-3 py-2 text-xs font-medium text-background hover:opacity-90"
                 >
                     Ver

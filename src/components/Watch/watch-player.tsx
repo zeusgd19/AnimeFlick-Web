@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { ServerEpisodeData, ServerEpisode } from "@/types/anime";
+import { encodeSlug } from "@/lib/utils/slug";
 
 type Variant = "SUB" | "DUB";
 
@@ -105,7 +106,7 @@ export default function WatchPlayer({
                             Copiar enlace
                         </button>
                         <Link
-                            href={`/anime/${animeSlug}`}
+                            href={`/anime/${encodeSlug(animeSlug)}`}
                             className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
                         >
                             Ver anime

@@ -4,6 +4,7 @@ import Link from "next/link";
 import {FavoriteAnime} from "@/lib/utils/favorite";
 import AddToProgressMenu from "@/components/Me/add-to-progress-menu";
 import {useRouter} from "next/navigation";
+import { encodeSlug } from "@/lib/utils/slug";
 
 type InputAnime = AnimeOnAirComplete | FilteredAnime | RecentEpisode;
 
@@ -36,7 +37,7 @@ export default function AnimeCard({ anime }: { anime: InputAnime }) {
     const card = toCardAnime(anime);
 
     // Botón principal (lo que ya tenías)
-    const href = card.kind === "recent" ? `/watch/${card.slug}` : `/anime/${card.slug}`;
+    const href = card.kind === "recent" ? `/watch/${encodeSlug(card.slug)}` : `/anime/${encodeSlug(card.slug)}`;
     const primaryLabel = card.kind === "recent" ? "Ver" : "Detalles";
     const secondaryLabel = card.kind === "recent" ? "Visto" : "+ Lista";
 
@@ -44,8 +45,8 @@ export default function AnimeCard({ anime }: { anime: InputAnime }) {
     // Si quieres SIEMPRE detalles: en "recent" necesitarías animeSlug (si no lo tienes, fallback a /watch)
     const cardHref =
         card.kind === "recent"
-            ? (("animeSlug" in card && (card as any).animeSlug) ? `/anime/${(card as any).animeSlug}` : href)
-            : `/anime/${card.slug}`;
+            ? (("animeSlug" in card && (card as any).animeSlug) ? `/anime/${encodeSlug((card as any).animeSlug)}` : href)
+            : `/anime/${encodeSlug(card.slug)}`;
 
     function go() {
         router.push(cardHref);
@@ -142,7 +143,7 @@ export default function AnimeCard({ anime }: { anime: InputAnime }) {
 export function AnimeFavoriteCard({ anime }: { anime: FavoriteAnime }) {
     const router = useRouter();
 
-    const href = `/anime/${anime.anime_slug}`;
+    const href = `/anime/${encodeSlug(anime.anime_slug)}`;
     const primaryLabel = "Detalles";
     const secondaryLabel = "+ Lista";
 

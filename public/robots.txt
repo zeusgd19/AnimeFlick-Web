@@ -1,0 +1,28 @@
+# AnimeFlick - robots.txt
+# Permite indexar las páginas principales, bloquea rutas sensibles
+
+User-agent: *
+
+# Permitir páginas principales
+Allow: /
+Allow: /search
+Allow: /login
+Allow: /register
+
+# Bloquear rutas de contenido (anti-DMCA)
+Disallow: /anime/
+Disallow: /watch/
+
+# Bloquear rutas internas / API
+Disallow: /api/
+Disallow: /me/
+Disallow: /soporte/
+Disallow: /confirm-email/
+Disallow: /verify-email/
+
+# No indexar parámetros de búsqueda con filtros internos
+Disallow: /*?type=
+Disallow: /*?page=
+
+# Sitemap (actualizar si tienes uno)
+# Sitemap: https://animeflick.com/sitemap.xml

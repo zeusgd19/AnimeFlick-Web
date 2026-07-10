@@ -8,6 +8,7 @@ import AddToProgressMenu from "@/components/Me/add-to-progress-menu";
 import AddToFavorite from "@/components/Me/add-to-favorite";
 import FetchWatchedEpisodes from "@/components/Episode/FetchWatchedEpisodes";
 import EpisodeList from "@/components/Episode/EpisodeList";
+import { encodeSlug, decodeSlug } from "@/lib/utils/slug";
 
 function Badge({ children }: { children: React.ReactNode }) {
     return (
@@ -35,7 +36,7 @@ function Stat({
 function RelatedCard({ r }: { r: RelatedAnime }) {
     return (
         <Link
-            href={`/anime/${r.slug}`}
+            href={`/anime/${encodeSlug(r.slug)}`}
             className="group rounded-2xl border bg-card p-4 hover:bg-accent"
         >
             <div className="flex items-start justify-between gap-3">
@@ -55,8 +56,9 @@ export default async function AnimeDetailPage({
     params: Promise<{ slug: string }>;
 }) {
     const { slug } = await params;
+    const realSlug = decodeSlug(slug);
 
-    const animeResponse: AnimeResponse = await fetchAnimeBySlug(slug);
+    const animeResponse: AnimeResponse = await fetchAnimeBySlug(realSlug);
     const anime = animeResponse.data;
 
     // Banner por título real (mejor matching que por slug)
@@ -138,7 +140,7 @@ export default async function AnimeDetailPage({
                             <div className="mt-5 flex flex-wrap gap-2">
                                 <AddToProgressMenu
                                     anime={{
-                                        anime_slug: slug,
+                                        anime_slug: realSlug,
                                         title: anime.title,
                                         cover: anime.cover,
                                         rating: anime.rating,
@@ -148,7 +150,7 @@ export default async function AnimeDetailPage({
                                 />
 
                                 <AddToFavorite anime={{
-                                    anime_slug: slug,
+                                    anime_slug: realSlug,
                                     title: anime.title,
                                     cover: anime.cover,
                                     rating: anime.rating,
@@ -184,7 +186,7 @@ export default async function AnimeDetailPage({
                                 </div>
 
                                 <Link
-                                    href={`/watch/${episodes[0]?.slug ?? slug}`}
+                                    href={`/watch/${encodeSlug(episodes[0]?.slug ?? realSlug)}`}
                                     className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
                                 >
                                     Ver ahora →
@@ -212,7 +214,7 @@ export default async function AnimeDetailPage({
                         </section>
 
                         {/* Fetch watched episodes */}
-                        <FetchWatchedEpisodes slug={slug} />
+                        <FetchWatchedEpisodes slug={realSlug} />
 
                         {/* Episodes card with internal scroll */}
                         <EpisodeList episodes={episodes} />
@@ -256,7 +258,7 @@ export default async function AnimeDetailPage({
                             <div className="mt-3 grid gap-2">
                                 <AddToProgressMenu
                                     anime={{
-                                        anime_slug: slug,
+                                        anime_slug: realSlug,
                                         title: anime.title,
                                         cover: anime.cover,
                                         rating: anime.rating,
@@ -265,7 +267,7 @@ export default async function AnimeDetailPage({
                                     triggerClassName="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
                                 />
                                 <Link
-                                    href={`/watch/${episodes[0]?.slug ?? slug}`}
+                                    href={`/watch/${encodeSlug(episodes[0]?.slug ?? realSlug)}`}
                                     className="rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
                                 >
                                     Empezar desde el 1
