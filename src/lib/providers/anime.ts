@@ -66,7 +66,7 @@ async function fallbackLatestEpisodes() {
         const title = $(el).find('h3.title').text().trim();
         const url = $(el).find('a').attr('href') || "";
         const img = $(el).find('img').attr('src') || "";
-        
+
         const fullSlug = url.split('/').pop() || "";
         const match = fullSlug.match(/(.+)-(\d+)$/);
         let slug = fullSlug;
@@ -81,7 +81,7 @@ async function fallbackLatestEpisodes() {
             slug: fullSlug,
             number: episode,
             cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
-            url: fullSlug, 
+            url: fullSlug,
         });
     });
 
@@ -89,31 +89,43 @@ async function fallbackLatestEpisodes() {
 }
 
 async function fallbackAnimesOnAir() {
-    const html = await fetchHtmlFallback(`${TIO_BASE_URL}/directorio?estado=1`, { revalidate: 300 });
-    const $ = cheerio.load(html);
-
     const data: any[] = [];
-    $('.animes .anime').each((_, el) => {
-        const title = $(el).find('h3.title').text().trim();
-        const url = $(el).find('a').attr('href') || "";
-        const img = $(el).find('img').attr('src') || "";
-        const slug = url.split('/').pop() || "";
+    let page = 1;
 
-        data.push({
-            title,
-            slug,
-            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
-            type: "TV",
+    while (true) {
+        const html = await fetchHtmlFallback(
+            `${TIO_BASE_URL}/directorio?year=1950%2C2026&status=1&sort=recent&p=${page}`,
+            { revalidate: 300 }
+        );
+        const $ = cheerio.load(html);
+
+        let count = 0;
+        $('.animes .anime').each((_, el) => {
+            const title = $(el).find('h3.title').text().trim();
+            const url = $(el).find('a').attr('href') || "";
+            const img = $(el).find('img').attr('src') || "";
+            const slug = url.split('/').pop() || "";
+
+            data.push({
+                title,
+                slug,
+                cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+                type: "TV",
+            });
+            count++;
         });
-    });
 
-    return { success: true, data: data.slice(0, 20) };
+        if (count === 0) break;
+        page++;
+    }
+
+    return { success: true, data };
 }
 
 async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
     const isLegacy = typeof arg1 === "string";
     const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
-    
+
     let url = `${TIO_BASE_URL}/directorio?p=${page}`;
 
     const typeMap: Record<string, number> = {
@@ -172,7 +184,7 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
         const pMatch = lastPageEl.match(/p=(\d+)/);
         if (pMatch) foundPages = parseInt(pMatch[1], 10);
     }
-    
+
     return {
         success: true,
         data: {
@@ -225,7 +237,7 @@ async function fallbackAnimeBySlug(slug: string) {
     const synopsis = $('.sinopsis').text().trim();
     const statusText = $('.fa-play-circle').parent().text().trim() || "Finalizado";
     const status = statusText;
-    
+
     const type = $('.meta span[class^="anime-type-"]').text().trim() || "Anime";
     let rating = $('#score').text().trim() || "0";
     if (rating === "N/A" || rating === "0") {
@@ -267,7 +279,7 @@ async function fallbackAnimeBySlug(slug: string) {
                     slug: `${slug}-${num}`
                 });
             });
-        } catch(e) {}
+        } catch (e) { }
     }
 
     const related: { title: string; relation: string; slug: string; url: string }[] = [];
@@ -317,7 +329,7 @@ async function fallbackServersEpisode(slug: string, number: number) {
             if (match) {
                 try {
                     serversData = JSON.parse(match[1]);
-                } catch(e) {}
+                } catch (e) { }
             }
         }
     }
@@ -331,8 +343,8 @@ async function fallbackServersEpisode(slug: string, number: number) {
 
     const title = $('h1.title').text().trim() || slug;
 
-    return { 
-        success: true, 
+    return {
+        success: true,
         data: {
             title: title,
             number: number,
@@ -414,7 +426,7 @@ export type AnimeFilterParams = {
     order?: FilterOrder;
     types?: RealAnimeType[];
     genres?: string[];
-    statuses?: number[]; 
+    statuses?: number[];
 };
 
 export async function fetchAnimesByFilter(type: RealAnimeType, page?: number): Promise<any>;
@@ -583,7 +595,7 @@ async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
     // The SvelteKit hydration script contains episode data inline.
     // We need to extract the embeds and downloads objects from the script.
     // Pattern: embeds:{SUB:[...],DUB:[...]},downloads:{SUB:[...],DUB:[...]}
-    
+
     // Extract the full data block from the SvelteKit hydration script
     // Handle any combination: SUB only, DUB only, SUB+DUB, DUB+SUB
     const embedsMatch = html.match(/embeds:\{((?:(?:SUB|DUB):\[.*?\])(?:,(?:SUB|DUB):\[.*?\])?)\}/);
@@ -609,7 +621,7 @@ async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
 
     function parseVariantBlock(rawBlock: string): Record<string, Array<{ server: string; url: string }>> {
         const result: Record<string, Array<{ server: string; url: string }>> = {};
-        
+
         // Match SUB:[...] and DUB:[...]
         const variantRegex = /(SUB|DUB):\[(.*?)\](?=,(?:SUB|DUB):|$)/g;
         let m;
@@ -618,7 +630,7 @@ async function fetchEmbedsFromAnimeAV1(slug: string, number: number) {
             const arrayContent = `[${m[2]}]`;
             result[variant] = parseServerArray(arrayContent);
         }
-        
+
         return result;
     }
 
@@ -769,7 +781,7 @@ export async function fetchBannerFromAniListByTitle(title: string) {
                     title: media.title?.romaji ?? media.title?.english ?? media.title?.native ?? title,
                 };
             }
-        } catch(e) {}
+        } catch (e) { }
 
         if (attempt === 0) await sleep(600);
     }
