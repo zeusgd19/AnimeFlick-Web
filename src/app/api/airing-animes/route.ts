@@ -1,48 +1,94 @@
-import { fetchAnimesOnAir } from "@/lib/providers/anime";
+import { fetchAnimesOnAir, fetchAnimeBySlug } from "@/lib/providers/anime";
 import { NextResponse } from "next/server";
 
 export const revalidate = 3600;
+
+// Mapa para convertir día en inglés a español
+const WEEKDAY_ES: Record<number, string> = {
+    0: "Domingo",
+    1: "Lunes",
+    2: "Martes",
+    3: "Miércoles",
+    4: "Jueves",
+    5: "Viernes",
+    6: "Sábado",
+};
+
+function getWeekdayFromDate(dateStr: string): string | null {
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return null;
+        return WEEKDAY_ES[date.getDay()] ?? null;
+    } catch {
+        return null;
+    }
+}
 
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
         const day = url.searchParams.get("day");
 
-        // Obtenemos los animes en emision desde el proveedor configurado (TioAnime por defecto ahora)
         const data = await fetchAnimesOnAir();
-        
-        // Dependiendo de cómo lo devuelva el provider, extraemos la lista
         const mediaList = data?.data?.media || data?.data || [];
 
-        // Mapeamos al formato AiringAnime que espera la app Android
-        const airingAnimes = mediaList.map((a: any) => ({
-            title: a.title,
-            slug: a.slug,
-            airingData: "On Air",
-            cover: a.cover
-        }));
+        // Para cada anime, intentamos obtener next_airing_episode en paralelo
+        const withDayPromises = mediaList.map(async (a: any) => {
+            const mapped = {
+                title: a.title,
+                slug: a.slug,
+                airingData: "On Air",
+                cover: a.cover,
+            };
+
+            try {
+                const detail = await fetchAnimeBySlug(a.slug);
+                const nextAiring = detail?.data?.next_airing_episode;
+                if (nextAiring) {
+                    const weekday = getWeekdayFromDate(nextAiring);
+                    return { ...mapped, airingData: nextAiring, weekday };
+                }
+            } catch { }
+
+            return { ...mapped, weekday: null as string | null };
+        });
+
+        const animesWithDay = await Promise.allSettled(withDayPromises);
+
+        const resolved = animesWithDay
+            .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+            .map((r) => r.value);
 
         if (day) {
-            // Si piden por dia especifico, devolvemos un array como espera Android getAiringAnimesByDay()
-            return NextResponse.json(airingAnimes, {
+            const filtered = resolved.filter((a) => a.weekday === day);
+            const cleaned = filtered.map(({ weekday, ...rest }) => rest);
+            return NextResponse.json(cleaned, {
                 headers: {
                     "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=300",
                 },
             });
         }
 
-        // Si no piden dia, Android getGroupedAiringAnimes() espera un Map<String, List<AiringAnime>>
-        // TioAnime no da los días en el listado de emisión, así que los ponemos todos en Lunes o Todos
-        // Ponemos en "Lunes" para que al menos salgan si la UI agrupa por días reales
-        const grouped = {
-            "Lunes": airingAnimes,
+        // Agrupar por día de la semana
+        const grouped: Record<string, any[]> = {
+            "Lunes": [],
             "Martes": [],
-            "Miercoles": [],
+            "Miércoles": [],
             "Jueves": [],
             "Viernes": [],
-            "Sabado": [],
-            "Domingo": []
+            "Sábado": [],
+            "Domingo": [],
         };
+
+        for (const anime of resolved) {
+            const { weekday, ...rest } = anime;
+            const key = weekday || "Lunes"; // Fallback a Lunes si no tiene fecha
+            if (grouped[key]) {
+                grouped[key].push(rest);
+            } else {
+                grouped[key] = [rest];
+            }
+        }
 
         return NextResponse.json(grouped, {
             headers: {
