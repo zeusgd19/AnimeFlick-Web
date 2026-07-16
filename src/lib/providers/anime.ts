@@ -270,6 +270,23 @@ async function fallbackAnimeBySlug(slug: string) {
         } catch(e) {}
     }
 
+    const related: { title: string; relation: string; slug: string; url: string }[] = [];
+    $('section.w-history ul li').each((_, el) => {
+        const anchor = $(el).find('.media-body a');
+        const relTitle = anchor.find('h3.title').text().trim();
+        const href = $(el).find('.thumb a').attr('href') || '';
+        const relSlug = href.replace('/anime/', '');
+        const relation = $(el).find('span[class^="anime-type-"]').text().trim() || 'Relacionado';
+        if (relTitle && relSlug) {
+            related.push({
+                title: relTitle,
+                relation,
+                slug: relSlug,
+                url: `/anime/${relSlug}`
+            });
+        }
+    });
+
     return {
         success: true,
         data: {
@@ -281,7 +298,8 @@ async function fallbackAnimeBySlug(slug: string) {
             rating,
             genres,
             next_airing_episode,
-            episodes
+            episodes,
+            related
         }
     };
 }
