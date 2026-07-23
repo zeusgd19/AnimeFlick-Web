@@ -1,7 +1,7 @@
 import { fetchAnimesOnAir, fetchAnimeBySlug } from "@/lib/providers/anime";
 import { NextResponse } from "next/server";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 // Mapa para convertir día en inglés a español
 const WEEKDAY_ES: Record<number, string> = {
