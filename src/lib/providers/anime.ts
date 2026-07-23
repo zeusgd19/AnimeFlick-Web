@@ -845,8 +845,8 @@ async function av1FallbackAnimeBySlug(slug: string) {
             const num = parseInt(em[1], 10);
             episodes.push({
                 number: num,
-                url: `${usedSlug}-${num}`,
-                slug: `${usedSlug}-${num}`
+                url: `${slug}-${num}`,
+                slug: `${slug}-${num}`
             });
         }
     }

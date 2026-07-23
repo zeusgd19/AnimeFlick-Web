@@ -28,18 +28,24 @@ export function getSeenEpisodes(): string[] {
     }
 }
 
+function normSlug(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 export function isEpisodeSeen(slug: string): boolean {
-    return getSeenEpisodes().includes(slug);
+    const target = normSlug(slug);
+    return getSeenEpisodes().some((s) => s === slug || normSlug(s) === target);
 }
 
 export function setEpisodeSeenLocal(slug: string, seen: boolean): boolean {
+    const target = normSlug(slug);
     const current = getSeenEpisodes();
     const updated = seen
-        ? Array.from(new Set([...current, slug]))
-        : current.filter((s) => s !== slug);
+        ? Array.from(new Set([...current.filter((s) => normSlug(s) !== target), slug]))
+        : current.filter((s) => s !== slug && normSlug(s) !== target);
 
     localStorage.setItem(KEY, JSON.stringify(updated));
-    return updated.includes(slug);
+    return isEpisodeSeen(slug);
 }
 
 export function mergeSeenEpisodes(slugs: string[]) {
@@ -137,9 +143,10 @@ export function removeEpisodesFromLocal(episodes: string[]) {
     const stored = localStorage.getItem(KEY);
     if (!stored) return;
 
-    const seen = new Set(JSON.parse(stored));
-    episodes.forEach(ep => seen.delete(ep));
-    localStorage.setItem(KEY, JSON.stringify([...seen]));
+    const current: string[] = JSON.parse(stored);
+    const normTargets = new Set(episodes.map((e) => normSlug(e)));
+    const filtered = current.filter((s) => !normTargets.has(normSlug(s)));
+    localStorage.setItem(KEY, JSON.stringify(filtered));
 
     // Trigger UI update
     window.dispatchEvent(new CustomEvent('watchedUpdated'));

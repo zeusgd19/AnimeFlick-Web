@@ -55,27 +55,32 @@ export function getFavoriteAnimes(): FavoriteAnime[] {
     }
 }
 
+function normSlug(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 export function isFavorite(animeSlug: string): boolean {
-    return getFavoriteAnimes().some((a) => a.anime_slug === animeSlug);
+    const target = normSlug(animeSlug);
+    return getFavoriteAnimes().some((a) => a.anime_slug === animeSlug || normSlug(a.anime_slug) === target);
 }
 
 export function upsertFavoriteLocal(anime: FavoriteAnime): boolean {
     if (typeof window === "undefined") return true;
 
-    const current = getFavoriteAnimes();
-    const map = new Map<string, FavoriteAnime>();
-    for (const a of current) map.set(a.anime_slug, a);
-    map.set(anime.anime_slug, anime);
+    const target = normSlug(anime.anime_slug);
+    const current = getFavoriteAnimes().filter((a) => a.anime_slug !== anime.anime_slug && normSlug(a.anime_slug) !== target);
+    current.push(anime);
 
-    localStorage.setItem(KEY, JSON.stringify(Array.from(map.values())));
+    localStorage.setItem(KEY, JSON.stringify(current));
     return true;
 }
 
 export function removeFavoriteLocal(animeSlug: string): boolean {
     if (typeof window === "undefined") return false;
 
+    const target = normSlug(animeSlug);
     const current = getFavoriteAnimes();
-    const updated = current.filter((a) => a.anime_slug !== animeSlug);
+    const updated = current.filter((a) => a.anime_slug !== animeSlug && normSlug(a.anime_slug) !== target);
 
     localStorage.setItem(KEY, JSON.stringify(updated));
     return false;
