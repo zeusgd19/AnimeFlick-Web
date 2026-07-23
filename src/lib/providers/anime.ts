@@ -243,7 +243,12 @@ async function fallbackAnimeBySlug(slug: string) {
         const jikanMatch = html.match(/fetch\('(https:\/\/api\.jikan\.moe[^']+)'\)/);
         if (jikanMatch) {
             try {
-                const jikanRes = await fetch(jikanMatch[1], { next: { revalidate: 3600 } });
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 1200);
+                const jikanRes = await fetch(jikanMatch[1], {
+                    next: { revalidate: 86400 },
+                    signal: controller.signal,
+                }).finally(() => clearTimeout(timeout));
                 if (jikanRes.ok) {
                     const jikanData = await jikanRes.json();
                     if (jikanData?.data?.score) {
@@ -251,7 +256,7 @@ async function fallbackAnimeBySlug(slug: string) {
                     }
                 }
             } catch (e) {
-                console.error("Failed to fetch jikan rating", e);
+                // Ignore timeout to prevent detail page delay
             }
         }
     }
@@ -353,80 +358,105 @@ async function fallbackServersEpisode(slug: string, number: number) {
 }
 
 // ---------------------------------------------------------
+// Hedged Request Execution Helper for Maximum Speed
+// ---------------------------------------------------------
+async function executeWithHedging<T>(
+    primaryFn: () => Promise<T>,
+    fallbackFn: () => Promise<T>,
+    delayMs = 1200
+): Promise<T | null> {
+    return new Promise((resolve) => {
+        let done = false;
+        let primaryFailed = false;
+        let fallbackStarted = false;
+
+        const finish = (val: T | null) => {
+            if (!done && val) {
+                done = true;
+                resolve(val);
+            }
+        };
+
+        // 1. Launch Primary
+        primaryFn()
+            .then((res) => {
+                if (res) finish(res);
+                else {
+                    primaryFailed = true;
+                    if (!fallbackStarted) {
+                        fallbackStarted = true;
+                        fallbackFn().then(finish).catch(() => finish(null));
+                    }
+                }
+            })
+            .catch(() => {
+                primaryFailed = true;
+                if (!fallbackStarted) {
+                    fallbackStarted = true;
+                    fallbackFn().then(finish).catch(() => finish(null));
+                }
+            });
+
+        // 2. Hedge delay: if Primary takes longer than delayMs, start Fallback in parallel
+        const timer = setTimeout(() => {
+            if (!done && !fallbackStarted) {
+                fallbackStarted = true;
+                fallbackFn().then(finish).catch(() => {
+                    if (primaryFailed) finish(null);
+                });
+            }
+        }, delayMs);
+    });
+}
+
+// ---------------------------------------------------------
 // MAIN EXPORTS (TioAnime -> AnimeAV1 -> EXTERNAL_API)
 // ---------------------------------------------------------
 
 export async function fetchLatestEpisodesFromExternal() {
-    try {
-        const fallbackRes = await fallbackLatestEpisodes();
-        if (fallbackRes && fallbackRes.success) return fallbackRes;
-    } catch (f) {
-        console.warn("[TioAnime] fallbackLatestEpisodes failed:", f?.toString());
-    }
-    try {
-        const av1Res = await av1FallbackLatestEpisodes();
-        if (av1Res && av1Res.success) return av1Res;
-    } catch (f) {
-        console.warn("[AnimeAV1] av1FallbackLatestEpisodes failed:", f?.toString());
-    }
+    const res = await executeWithHedging(
+        () => fallbackLatestEpisodes(),
+        () => av1FallbackLatestEpisodes(),
+        1200
+    );
+    if (res) return res;
     try {
         const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/latest-episodes`;
-        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-        if (res && res.success) return res;
-        throw new Error("Primary API returned invalid success");
-    } catch (e) {
-        console.warn("[Primary API] fetchLatestEpisodesFromExternal failed:", e?.toString());
-        return null;
+        return await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 3000 });
+    } catch {
+        return { success: true, data: [] };
     }
 }
 
 export async function fetchAnimesOnAir() {
-    try {
-        const fallbackRes = await fallbackAnimesOnAir();
-        if (fallbackRes && fallbackRes.success) return fallbackRes;
-    } catch (f) {
-        console.warn("[TioAnime] fallbackAnimesOnAir failed:", f?.toString());
-    }
-    try {
-        const av1Res = await av1FallbackAnimesOnAir();
-        if (av1Res && av1Res.success) return av1Res;
-    } catch (f) {
-        console.warn("[AnimeAV1] av1FallbackAnimesOnAir failed:", f?.toString());
-    }
+    const res = await executeWithHedging(
+        () => fallbackAnimesOnAir(),
+        () => av1FallbackAnimesOnAir(),
+        1200
+    );
+    if (res) return res;
     try {
         const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/animes-on-air`;
-        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-        if (res && res.success) return res;
-        throw new Error("Primary API returned invalid success");
-    } catch (e) {
-        console.warn("[Primary API] fetchAnimesOnAir failed:", e?.toString());
-        return null;
+        return await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 3000 });
+    } catch {
+        return { success: true, data: [] };
     }
 }
 
 export async function fetchAnimeBySlug(slug: string) {
-    try {
-        const fallbackRes = await fallbackAnimeBySlug(slug);
-        if (fallbackRes && fallbackRes.success) return fallbackRes;
-    } catch (f) {
-        console.warn("[TioAnime] fallbackAnimeBySlug failed:", f?.toString());
-    }
-    try {
-        const av1Res = await av1FallbackAnimeBySlug(slug);
-        if (av1Res && av1Res.success) return av1Res;
-    } catch (f) {
-        console.warn("[AnimeAV1] av1FallbackAnimeBySlug failed:", f?.toString());
-    }
+    const res = await executeWithHedging(
+        () => fallbackAnimeBySlug(slug),
+        () => av1FallbackAnimeBySlug(slug),
+        1200
+    );
+    if (res) return res;
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/anime/${encodeURIComponent(slug)}`;
-        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-        if (res && res.success) return res;
-        throw new Error("Primary API returned invalid success");
-    } catch (e) {
-        console.warn("[Primary API] fetchAnimeBySlug failed:", e?.toString());
+        return await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 3000 });
+    } catch {
         return null;
     }
 }
@@ -443,18 +473,12 @@ export type AnimeFilterParams = {
 export async function fetchAnimesByFilter(type: RealAnimeType, page?: number): Promise<any>;
 export async function fetchAnimesByFilter(params: AnimeFilterParams): Promise<any>;
 export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
-    try {
-        const fallbackRes = await fallbackAnimesByFilter(arg1, arg2);
-        if (fallbackRes && fallbackRes.success) return fallbackRes;
-    } catch (f) {
-        console.warn("[TioAnime] fallbackAnimesByFilter failed:", f?.toString());
-    }
-    try {
-        const av1Res = await av1FallbackAnimesByFilter(arg1, arg2);
-        if (av1Res && av1Res.success) return av1Res;
-    } catch (f) {
-        console.warn("[AnimeAV1] av1FallbackAnimesByFilter failed:", f?.toString());
-    }
+    const res = await executeWithHedging(
+        () => fallbackAnimesByFilter(arg1, arg2),
+        () => av1FallbackAnimesByFilter(arg1, arg2),
+        1200
+    );
+    if (res) return res;
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const isLegacy = typeof arg1 === "string";
@@ -471,46 +495,31 @@ export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParam
         }
 
         const url = `${base}/api/search/by-filter?order=${encodeURIComponent(order)}&page=${page}`;
-        const res = await strictJsonFetch<any>(url, {
+        return await strictJsonFetch<any>(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(bodyObj),
             next: { revalidate: 300 },
-            timeoutMs: 8000,
+            timeoutMs: 3000,
         });
-
-        if (res && res.success) {
-            return res;
-        }
-        throw new Error("Primary API returned invalid success");
-    } catch (e) {
-        console.warn("[Primary API] fetchAnimesByFilter failed:", e?.toString());
+    } catch {
         return null;
     }
 }
 
 export async function fetchSearchAnime(query: string, page = 1) {
-    try {
-        const fallbackRes = await fallbackSearchAnime(query, page);
-        if (fallbackRes && fallbackRes.success) return fallbackRes;
-    } catch (f) {
-        console.warn("[TioAnime] fallbackSearchAnime failed:", f?.toString());
-    }
-    try {
-        const av1Res = await av1FallbackSearchAnime(query, page);
-        if (av1Res && av1Res.success) return av1Res;
-    } catch (f) {
-        console.warn("[AnimeAV1] av1FallbackSearchAnime failed:", f?.toString());
-    }
+    const res = await executeWithHedging(
+        () => fallbackSearchAnime(query, page),
+        () => av1FallbackSearchAnime(query, page),
+        1200
+    );
+    if (res) return res;
     try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/search?query=${encodeURIComponent(query)}&page=${page}`;
-        const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-        if (res && res.success) return res;
-        throw new Error("Primary API returned invalid success");
-    } catch (e) {
-        console.warn("[Primary API] fetchSearchAnime failed:", e?.toString());
-        return null;
+        return await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 3000 });
+    } catch {
+        return { success: true, data: { media: [] } };
     }
 }
 
@@ -701,7 +710,7 @@ async function av1FallbackAnimesOnAir() {
 
 async function av1FallbackSearchAnime(query: string, page = 1) {
     const url = `${ANIMEAV1_BASE_URL}/catalogo?search=${encodeURIComponent(query)}&page=${page}`;
-    const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+    const html = await fetchHtmlFallback(url, { revalidate: 300 }, 3500);
     const { results } = parseAV1CatalogResults(html);
 
     const media = results.map(entry => ({
@@ -782,13 +791,13 @@ async function av1FallbackAnimeBySlug(slug: string) {
     let html: string;
     let usedSlug = slug;
     try {
-        html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/media/${slug}`, { revalidate: 300 }, 10000);
+        html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/media/${slug}`, { revalidate: 300 }, 3500);
     } catch (e: any) {
         if (e?.message?.includes("404")) {
             const resolved = await resolveAnimeAV1Slug(slug);
             if (!resolved || resolved === slug) throw new Error(`AV1: slug "${slug}" not found`);
             usedSlug = resolved;
-            html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/media/${usedSlug}`, { revalidate: 300 }, 10000);
+            html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/media/${usedSlug}`, { revalidate: 300 }, 3500);
         } else {
             throw e;
         }
