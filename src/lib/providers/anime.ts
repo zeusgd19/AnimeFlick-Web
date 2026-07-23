@@ -555,18 +555,15 @@ function parseAV1CatalogResults(html: string): { results: any[]; total: number }
     const total = totalMatch ? parseInt(totalMatch[1], 10) : 0;
     const raw = resultsMatch[1];
 
-    // Extract individual entries using regex since the data isn't valid JSON
+    // Extract individual entries robustly handling escaped quotes and varying property order
     const entries: any[] = [];
-    const entryRegex = /\{id:"(\d+)",title:"([^"]*)"(?:,synopsis:"([^"]*)")?(?:,categoryId:(\d+))?,slug:"([^"]+)"(?:,category:(\{[^}]+\}|[a-z]))?\}/g;
+    const entryRegex = /\{id:"(\d+)",title:"((?:[^"\\]|\\.)*)"[\s\S]*?slug:"([^"]+)"/g;
     let m;
     while ((m = entryRegex.exec(raw)) !== null) {
         entries.push({
             id: m[1],
-            title: m[2],
-            synopsis: m[3] || "",
-            categoryId: m[4] ? parseInt(m[4], 10) : 1,
-            slug: m[5],
-            categoryRaw: m[6] || null,
+            title: m[2].replace(/\\"/g, '"').replace(/\\\\/g, '\\'),
+            slug: m[3],
         });
     }
 
