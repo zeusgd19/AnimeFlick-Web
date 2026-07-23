@@ -1,3 +1,5 @@
+import { isSlugMatch } from "@/lib/utils/slug";
+
 export type FavoriteAnime = {
     anime_slug: string;
     title: string;
@@ -55,20 +57,14 @@ export function getFavoriteAnimes(): FavoriteAnime[] {
     }
 }
 
-function normSlug(s: string): string {
-    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
 export function isFavorite(animeSlug: string): boolean {
-    const target = normSlug(animeSlug);
-    return getFavoriteAnimes().some((a) => a.anime_slug === animeSlug || normSlug(a.anime_slug) === target);
+    return getFavoriteAnimes().some((a) => isSlugMatch(a.anime_slug, animeSlug));
 }
 
 export function upsertFavoriteLocal(anime: FavoriteAnime): boolean {
     if (typeof window === "undefined") return true;
 
-    const target = normSlug(anime.anime_slug);
-    const current = getFavoriteAnimes().filter((a) => a.anime_slug !== anime.anime_slug && normSlug(a.anime_slug) !== target);
+    const current = getFavoriteAnimes().filter((a) => !isSlugMatch(a.anime_slug, anime.anime_slug));
     current.push(anime);
 
     localStorage.setItem(KEY, JSON.stringify(current));
@@ -78,9 +74,8 @@ export function upsertFavoriteLocal(anime: FavoriteAnime): boolean {
 export function removeFavoriteLocal(animeSlug: string): boolean {
     if (typeof window === "undefined") return false;
 
-    const target = normSlug(animeSlug);
     const current = getFavoriteAnimes();
-    const updated = current.filter((a) => a.anime_slug !== animeSlug && normSlug(a.anime_slug) !== target);
+    const updated = current.filter((a) => !isSlugMatch(a.anime_slug, animeSlug));
 
     localStorage.setItem(KEY, JSON.stringify(updated));
     return false;

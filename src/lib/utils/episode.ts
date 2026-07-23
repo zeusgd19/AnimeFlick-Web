@@ -1,3 +1,5 @@
+import { isEpisodeSlugMatch } from "@/lib/utils/slug";
+
 export function parseEpisodeSlug(episodeSlug: string): { animeSlug: string; number: number } {
     // Caso típico: "one-piece-1060" => animeSlug="one-piece", number=1060
     const m = episodeSlug.match(/^(.*?)-(\d+)$/);
@@ -28,21 +30,15 @@ export function getSeenEpisodes(): string[] {
     }
 }
 
-function normSlug(s: string): string {
-    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
 export function isEpisodeSeen(slug: string): boolean {
-    const target = normSlug(slug);
-    return getSeenEpisodes().some((s) => s === slug || normSlug(s) === target);
+    return getSeenEpisodes().some((s) => isEpisodeSlugMatch(s, slug));
 }
 
 export function setEpisodeSeenLocal(slug: string, seen: boolean): boolean {
-    const target = normSlug(slug);
     const current = getSeenEpisodes();
     const updated = seen
-        ? Array.from(new Set([...current.filter((s) => normSlug(s) !== target), slug]))
-        : current.filter((s) => s !== slug && normSlug(s) !== target);
+        ? Array.from(new Set([...current.filter((s) => !isEpisodeSlugMatch(s, slug)), slug]))
+        : current.filter((s) => !isEpisodeSlugMatch(s, slug));
 
     localStorage.setItem(KEY, JSON.stringify(updated));
     return isEpisodeSeen(slug);
@@ -144,8 +140,7 @@ export function removeEpisodesFromLocal(episodes: string[]) {
     if (!stored) return;
 
     const current: string[] = JSON.parse(stored);
-    const normTargets = new Set(episodes.map((e) => normSlug(e)));
-    const filtered = current.filter((s) => !normTargets.has(normSlug(s)));
+    const filtered = current.filter((s) => !episodes.some((e) => isEpisodeSlugMatch(s, e)));
     localStorage.setItem(KEY, JSON.stringify(filtered));
 
     // Trigger UI update
