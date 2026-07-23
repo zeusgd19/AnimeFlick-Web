@@ -94,7 +94,7 @@ async function fallbackAnimesOnAir() {
 
     for (let page = 1; page <= maxPages; page++) {
         const html = await fetchHtmlFallback(
-            `${TIO_BASE_URL}/directorio?status[]=1&sort=recent&p=${page}`,
+            `${TIO_BASE_URL}/directorio?status=1&sort=recent&p=${page}`,
             { revalidate: 300 }
         );
         const $ = cheerio.load(html);
