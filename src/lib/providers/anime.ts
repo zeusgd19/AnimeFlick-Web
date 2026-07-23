@@ -681,7 +681,7 @@ async function av1FallbackAnimesOnAir() {
     const maxPages = 2; // Fetch max 2 pages (~56 animes) to avoid latency
 
     for (let page = 1; page <= maxPages; page++) {
-        const url = `${ANIMEAV1_BASE_URL}/catalogo?status=En+Emisi%C3%B3n&page=${page}`;
+        const url = `${ANIMEAV1_BASE_URL}/catalogo?status=emision&page=${page}`;
         const html = await fetchHtmlFallback(url, { revalidate: 300 }, 5000);
         const { results, total } = parseAV1CatalogResults(html);
 
@@ -747,7 +747,7 @@ async function av1FallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams
             url += `&genre=${encodeURIComponent(arg1.genres[0])}`;
         }
         if (arg1.statuses && arg1.statuses.length > 0) {
-            const statusMap: Record<number, string> = { 1: "En Emisión", 2: "Finalizado" };
+            const statusMap: Record<number, string> = { 1: "emision", 2: "finalizado", 3: "proximamente" };
             const statusStr = statusMap[arg1.statuses[0]];
             if (statusStr) url += `&status=${encodeURIComponent(statusStr)}`;
         }
