@@ -94,7 +94,7 @@ async function fallbackAnimesOnAir() {
 
     for (let page = 1; page <= maxPages; page++) {
         const html = await fetchHtmlFallback(
-            `${TIO_BASE_URL}/directorio?status=1&sort=recent&p=${page}`,
+            `${TIO_BASE_URL}/directorio?status[]=1&sort=recent&p=${page}`,
             { revalidate: 300 }
         );
         const $ = cheerio.load(html);
@@ -152,7 +152,7 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
             });
         }
         if (arg1.statuses && arg1.statuses.length > 0) {
-            url += `&estado=${arg1.statuses[0]}`;
+            url += `&status[]=${arg1.statuses[0]}`;
         }
     }
 
