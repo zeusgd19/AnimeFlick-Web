@@ -35,7 +35,7 @@ async function strictJsonFetch<T>(url: string, opts: FetchJsonOptions = {}): Pro
 // ---------------------------------------------------------
 const TIO_BASE_URL = "https://tioanime.com";
 
-async function fetchHtmlFallback(url: string, nextOpts?: any, timeoutMs = 8000) {
+async function fetchHtmlFallback(url: string, nextOpts?: any, timeoutMs = 4000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -90,11 +90,11 @@ async function fallbackLatestEpisodes() {
 
 async function fallbackAnimesOnAir() {
     const data: any[] = [];
-    let page = 1;
+    const maxPages = 2; // Fetch max 2 pages (~48 animes) to avoid sequential loop latency
 
-    while (true) {
+    for (let page = 1; page <= maxPages; page++) {
         const html = await fetchHtmlFallback(
-            `${TIO_BASE_URL}/directorio?year=1950%2C2026&status=1&sort=recent&p=${page}`,
+            `${TIO_BASE_URL}/directorio?status=1&sort=recent&p=${page}`,
             { revalidate: 300 }
         );
         const $ = cheerio.load(html);
@@ -116,7 +116,6 @@ async function fallbackAnimesOnAir() {
         });
 
         if (count === 0) break;
-        page++;
     }
 
     return { success: true, data };
@@ -678,12 +677,12 @@ async function av1FallbackLatestEpisodes() {
 
 async function av1FallbackAnimesOnAir() {
     const data: any[] = [];
-    const perPage = 28; // AnimeAV1 shows ~28 per page
-    let page = 1;
+    const perPage = 28;
+    const maxPages = 2; // Fetch max 2 pages (~56 animes) to avoid latency
 
-    while (true) {
+    for (let page = 1; page <= maxPages; page++) {
         const url = `${ANIMEAV1_BASE_URL}/catalogo?status=En+Emisi%C3%B3n&page=${page}`;
-        const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+        const html = await fetchHtmlFallback(url, { revalidate: 300 }, 5000);
         const { results, total } = parseAV1CatalogResults(html);
 
         if (results.length === 0) break;
@@ -698,7 +697,6 @@ async function av1FallbackAnimesOnAir() {
         }
 
         if (page * perPage >= total) break;
-        page++;
     }
 
     return { success: true, data };
