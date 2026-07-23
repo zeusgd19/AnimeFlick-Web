@@ -354,7 +354,7 @@ async function fallbackServersEpisode(slug: string, number: number) {
 }
 
 // ---------------------------------------------------------
-// MAIN EXPORTS (AnimeFLV Primary -> TioAnime Fallback)
+// MAIN EXPORTS (TioAnime -> AnimeAV1 -> EXTERNAL_API)
 // ---------------------------------------------------------
 
 export async function fetchLatestEpisodesFromExternal() {
@@ -363,6 +363,12 @@ export async function fetchLatestEpisodesFromExternal() {
         if (fallbackRes && fallbackRes.success) return fallbackRes;
     } catch (f) {
         console.warn("[TioAnime] fallbackLatestEpisodes failed:", f?.toString());
+    }
+    try {
+        const av1Res = await av1FallbackLatestEpisodes();
+        if (av1Res && av1Res.success) return av1Res;
+    } catch (f) {
+        console.warn("[AnimeAV1] av1FallbackLatestEpisodes failed:", f?.toString());
     }
     try {
         const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
@@ -384,13 +390,16 @@ export async function fetchAnimesOnAir() {
         console.warn("[TioAnime] fallbackAnimesOnAir failed:", f?.toString());
     }
     try {
+        const av1Res = await av1FallbackAnimesOnAir();
+        if (av1Res && av1Res.success) return av1Res;
+    } catch (f) {
+        console.warn("[AnimeAV1] av1FallbackAnimesOnAir failed:", f?.toString());
+    }
+    try {
         const base = process.env.EXTERNAL_API_BASE || "https://fallback.com";
         const url = `${base}/api/list/animes-on-air`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-
-        if (res && res.success) {
-            return res;
-        }
+        if (res && res.success) return res;
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchAnimesOnAir failed:", e?.toString());
@@ -406,13 +415,16 @@ export async function fetchAnimeBySlug(slug: string) {
         console.warn("[TioAnime] fallbackAnimeBySlug failed:", f?.toString());
     }
     try {
+        const av1Res = await av1FallbackAnimeBySlug(slug);
+        if (av1Res && av1Res.success) return av1Res;
+    } catch (f) {
+        console.warn("[AnimeAV1] av1FallbackAnimeBySlug failed:", f?.toString());
+    }
+    try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/anime/${encodeURIComponent(slug)}`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-
-        if (res && res.success) {
-            return res;
-        }
+        if (res && res.success) return res;
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchAnimeBySlug failed:", e?.toString());
@@ -437,6 +449,12 @@ export async function fetchAnimesByFilter(arg1: RealAnimeType | AnimeFilterParam
         if (fallbackRes && fallbackRes.success) return fallbackRes;
     } catch (f) {
         console.warn("[TioAnime] fallbackAnimesByFilter failed:", f?.toString());
+    }
+    try {
+        const av1Res = await av1FallbackAnimesByFilter(arg1, arg2);
+        if (av1Res && av1Res.success) return av1Res;
+    } catch (f) {
+        console.warn("[AnimeAV1] av1FallbackAnimesByFilter failed:", f?.toString());
     }
     try {
         const base = process.env.EXTERNAL_API_BASE!;
@@ -480,13 +498,16 @@ export async function fetchSearchAnime(query: string, page = 1) {
         console.warn("[TioAnime] fallbackSearchAnime failed:", f?.toString());
     }
     try {
+        const av1Res = await av1FallbackSearchAnime(query, page);
+        if (av1Res && av1Res.success) return av1Res;
+    } catch (f) {
+        console.warn("[AnimeAV1] av1FallbackSearchAnime failed:", f?.toString());
+    }
+    try {
         const base = process.env.EXTERNAL_API_BASE!;
         const url = `${base}/api/search?query=${encodeURIComponent(query)}&page=${page}`;
         const res = await strictJsonFetch<any>(url, { next: { revalidate: 300 }, timeoutMs: 8000 });
-
-        if (res && res.success) {
-            return res;
-        }
+        if (res && res.success) return res;
         throw new Error("Primary API returned invalid success");
     } catch (e) {
         console.warn("[Primary API] fetchSearchAnime failed:", e?.toString());
@@ -495,9 +516,63 @@ export async function fetchSearchAnime(query: string, page = 1) {
 }
 
 // ---------------------------------------------------------
-// AnimeAV1 Scraper (Temporary Primary Source for Embeds)
+// AnimeAV1 Scraper (Full Fallback + Primary Source for Embeds)
 // ---------------------------------------------------------
 const ANIMEAV1_BASE_URL = "https://animeav1.com";
+const ANIMEAV1_CDN = "https://cdn.animeav1.com";
+
+/** Map AV1 numeric status to human-readable text */
+function av1StatusText(status: number): string {
+    switch (status) {
+        case 1: return "En emision";
+        case 0: return "Finalizado";
+        default: return "En emision";
+    }
+}
+
+/** Map AV1 category to the type string we use */
+function av1CategoryToType(category: any): string {
+    if (!category) return "Anime";
+    const name = typeof category === "string" ? category : (category.name || "");
+    if (name.includes("Pelicula") || name.includes("Película")) return "Película";
+    if (name.includes("OVA")) return "OVA";
+    if (name.includes("Especial")) return "Especial";
+    if (name.includes("ONA")) return "ONA";
+    return "TV";
+}
+
+/**
+ * Parse catalog results from AnimeAV1 SvelteKit hydration data.
+ * The catalog pages embed results as: results:[{...},{...}],total:N
+ * Category references are serialized as single letters (a, b, c…) that
+ * refer to previously defined category objects. We handle this gracefully.
+ */
+function parseAV1CatalogResults(html: string): { results: any[]; total: number } {
+    const resultsMatch = html.match(/results:\[([\s\S]*?)\],total:/);
+    const totalMatch = html.match(/total:(\d+)/);
+
+    if (!resultsMatch) return { results: [], total: 0 };
+
+    const total = totalMatch ? parseInt(totalMatch[1], 10) : 0;
+    const raw = resultsMatch[1];
+
+    // Extract individual entries using regex since the data isn't valid JSON
+    const entries: any[] = [];
+    const entryRegex = /\{id:"(\d+)",title:"([^"]*)"(?:,synopsis:"([^"]*)")?(?:,categoryId:(\d+))?,slug:"([^"]+)"(?:,category:(\{[^}]+\}|[a-z]))?\}/g;
+    let m;
+    while ((m = entryRegex.exec(raw)) !== null) {
+        entries.push({
+            id: m[1],
+            title: m[2],
+            synopsis: m[3] || "",
+            categoryId: m[4] ? parseInt(m[4], 10) : 1,
+            slug: m[5],
+            categoryRaw: m[6] || null,
+        });
+    }
+
+    return { results: entries, total };
+}
 
 // Cache for slug mappings: AnimeFLV slug -> AnimeAV1 slug
 const slugCache = new Map<string, string | null>();
@@ -565,6 +640,248 @@ async function resolveAnimeAV1Slug(animeFlvSlug: string): Promise<string | null>
         slugCache.set(animeFlvSlug, null);
         return null;
     }
+}
+
+// ---------------------------------------------------------
+// AnimeAV1 Fallback Functions (Full Provider)
+// ---------------------------------------------------------
+
+async function av1FallbackLatestEpisodes() {
+    const html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/`, { revalidate: 300 }, 10000);
+
+    // Extract latestEpisodes from SvelteKit hydration data
+    const match = html.match(/latestEpisodes:\[([\s\S]*?)\]/);
+    if (!match) throw new Error("No latestEpisodes found in AnimeAV1 home");
+
+    const data: any[] = [];
+    // Pattern: {commentsCount:N,createdAt:"...",id:N,media:{id:N,slug:"...",title:"..."},number:N,publishedAt:"..."}
+    const epRegex = /\{[^}]*media:\{id:(\d+),slug:"([^"]+)",title:"([^"]+)"\},number:(\d+)/g;
+    let m;
+    while ((m = epRegex.exec(match[1])) !== null) {
+        const mediaId = m[1];
+        const slug = m[2];
+        const title = m[3];
+        const number = parseInt(m[4], 10);
+
+        data.push({
+            title,
+            slug: `${slug}-${number}`,
+            number,
+            cover: `${ANIMEAV1_CDN}/thumbnails/${mediaId}.jpg`,
+            url: `${slug}-${number}`,
+        });
+    }
+
+    if (data.length === 0) throw new Error("No episodes parsed from AnimeAV1 home");
+    return { success: true, data };
+}
+
+async function av1FallbackAnimesOnAir() {
+    const data: any[] = [];
+    const perPage = 28; // AnimeAV1 shows ~28 per page
+    let page = 1;
+
+    while (true) {
+        const url = `${ANIMEAV1_BASE_URL}/catalogo?status=En+Emisi%C3%B3n&page=${page}`;
+        const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+        const { results, total } = parseAV1CatalogResults(html);
+
+        if (results.length === 0) break;
+
+        for (const entry of results) {
+            data.push({
+                title: entry.title,
+                slug: entry.slug,
+                cover: `${ANIMEAV1_CDN}/covers/${entry.id}.jpg`,
+                type: "TV",
+            });
+        }
+
+        if (page * perPage >= total) break;
+        page++;
+    }
+
+    return { success: true, data };
+}
+
+async function av1FallbackSearchAnime(query: string, page = 1) {
+    const url = `${ANIMEAV1_BASE_URL}/catalogo?search=${encodeURIComponent(query)}&page=${page}`;
+    const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+    const { results } = parseAV1CatalogResults(html);
+
+    const media = results.map(entry => ({
+        title: entry.title,
+        slug: entry.slug,
+        cover: `${ANIMEAV1_CDN}/covers/${entry.id}.jpg`,
+        rating: "4.0",
+        type: "Anime",
+    }));
+
+    return { success: true, data: { media } };
+}
+
+async function av1FallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
+    const isLegacy = typeof arg1 === "string";
+    const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
+
+    let url = `${ANIMEAV1_BASE_URL}/catalogo?page=${page}`;
+
+    // Map type filter
+    const av1TypeMap: Record<string, string> = {
+        "tv": "TV Anime",
+        "movie": "Pelicula",
+        "ova": "OVA",
+        "special": "Especial",
+    };
+
+    if (isLegacy) {
+        if (av1TypeMap[arg1 as string]) {
+            url += `&category=${encodeURIComponent(av1TypeMap[arg1 as string])}`;
+        }
+    } else {
+        if (arg1.types && arg1.types.length > 0) {
+            const firstType = arg1.types[0];
+            if (av1TypeMap[firstType]) {
+                url += `&category=${encodeURIComponent(av1TypeMap[firstType])}`;
+            }
+        }
+        if (arg1.genres && arg1.genres.length > 0) {
+            url += `&genre=${encodeURIComponent(arg1.genres[0])}`;
+        }
+        if (arg1.statuses && arg1.statuses.length > 0) {
+            const statusMap: Record<number, string> = { 1: "En Emisión", 2: "Finalizado" };
+            const statusStr = statusMap[arg1.statuses[0]];
+            if (statusStr) url += `&status=${encodeURIComponent(statusStr)}`;
+        }
+    }
+
+    const html = await fetchHtmlFallback(url, { revalidate: 300 }, 10000);
+    const { results, total } = parseAV1CatalogResults(html);
+
+    const perPage = 28;
+    const foundPages = Math.ceil(total / perPage);
+
+    const media = results.map(entry => ({
+        title: entry.title,
+        slug: entry.slug,
+        cover: `${ANIMEAV1_CDN}/covers/${entry.id}.jpg`,
+        rating: "4.0",
+        type: "Anime",
+    }));
+
+    return {
+        success: true,
+        data: {
+            currentPage: page,
+            hasNextPage: page < foundPages,
+            previousPage: page > 1 ? String(page - 1) : null,
+            nextPage: page < foundPages ? String(page + 1) : null,
+            foundPages,
+            media
+        }
+    };
+}
+
+async function av1FallbackAnimeBySlug(slug: string) {
+    // Try the slug as-is first; if 404, try resolving via search
+    let html: string;
+    let usedSlug = slug;
+    try {
+        html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/media/${slug}`, { revalidate: 300 }, 10000);
+    } catch (e: any) {
+        if (e?.message?.includes("404")) {
+            const resolved = await resolveAnimeAV1Slug(slug);
+            if (!resolved || resolved === slug) throw new Error(`AV1: slug "${slug}" not found`);
+            usedSlug = resolved;
+            html = await fetchHtmlFallback(`${ANIMEAV1_BASE_URL}/media/${usedSlug}`, { revalidate: 300 }, 10000);
+        } else {
+            throw e;
+        }
+    }
+
+    // Extract the SvelteKit media data block
+    const titleMatch = html.match(/title:"([^"]+)"/);
+    const title = titleMatch ? titleMatch[1] : slug;
+
+    const synopsisMatch = html.match(/synopsis:"((?:[^"\\]|\\.)*)"/);
+    const synopsis = synopsisMatch ? synopsisMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"') : "";
+
+    const statusMatch = html.match(/status:(\d+)/);
+    const status = statusMatch ? av1StatusText(parseInt(statusMatch[1], 10)) : "Finalizado";
+
+    const scoreMatch = html.match(/score:([\d.]+)/);
+    const rating = scoreMatch ? scoreMatch[1] : "0";
+
+    const categoryMatch = html.match(/category:\{[^}]*name:"([^"]+)"/);
+    const type = categoryMatch ? av1CategoryToType({ name: categoryMatch[1] }) : "TV";
+
+    // Extract genres
+    const genres: string[] = [];
+    const genresMatch = html.match(/genres:\[([\s\S]*?)\]/);
+    if (genresMatch) {
+        const genreNameRegex = /name:"([^"]+)"/g;
+        let gm;
+        while ((gm = genreNameRegex.exec(genresMatch[1])) !== null) {
+            genres.push(gm[1]);
+        }
+    }
+
+    // Extract anime ID for cover
+    const idMatch = html.match(/\{id:(\d+),categoryId/);
+    const animeId = idMatch ? idMatch[1] : null;
+    const cover = animeId ? `${ANIMEAV1_CDN}/covers/${animeId}.jpg` : "";
+
+    // Extract episodes
+    const episodes: any[] = [];
+    const episodesMatch = html.match(/episodes:\[([\s\S]*?)\]/);
+    if (episodesMatch) {
+        const epNumRegex = /number:(\d+)/g;
+        let em;
+        while ((em = epNumRegex.exec(episodesMatch[1])) !== null) {
+            const num = parseInt(em[1], 10);
+            episodes.push({
+                number: num,
+                url: `${usedSlug}-${num}`,
+                slug: `${usedSlug}-${num}`
+            });
+        }
+    }
+
+    // Extract next airing date
+    const nextDateMatch = html.match(/nextDate:"([^"]+)"/);
+    const next_airing_episode = nextDateMatch ? nextDateMatch[1].split("T")[0] : null;
+
+    // Extract relations
+    const related: { title: string; relation: string; slug: string; url: string }[] = [];
+    const relationsMatch = html.match(/relations:\[([\s\S]*?)\]/);
+    if (relationsMatch) {
+        const relRegex = /slug:"([^"]+)",title:"([^"]+)"/g;
+        let rm;
+        while ((rm = relRegex.exec(relationsMatch[1])) !== null) {
+            related.push({
+                title: rm[2],
+                relation: "Relacionado",
+                slug: rm[1],
+                url: `/anime/${rm[1]}`
+            });
+        }
+    }
+
+    return {
+        success: true,
+        data: {
+            title,
+            cover,
+            synopsis,
+            status,
+            type,
+            rating,
+            genres,
+            next_airing_episode,
+            episodes,
+            related
+        }
+    };
 }
 
 async function fetchAnimeAV1Page(slug: string, number: number) {
