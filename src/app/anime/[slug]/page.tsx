@@ -1,5 +1,6 @@
 // src/app/anime/[slug]/page.tsx
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import Header from "@/components/Header/header";
 import { fetchAnimeBySlug, fetchBannerFromAniListByTitle } from "@/lib/providers/anime";
 import type { AnimeResponse, Episode, RelatedAnime } from "@/types/anime";
@@ -58,7 +59,10 @@ export default async function AnimeDetailPage({
     const { slug } = await params;
     const realSlug = decodeSlug(slug);
 
-    const animeResponse: AnimeResponse = await fetchAnimeBySlug(realSlug);
+    const animeResponse: AnimeResponse | null = await fetchAnimeBySlug(realSlug);
+    if (!animeResponse || !animeResponse.data) {
+        notFound();
+    }
     const anime = animeResponse.data;
 
     // Banner por título real (mejor matching que por slug)
