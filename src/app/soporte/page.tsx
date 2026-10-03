@@ -48,7 +48,7 @@ export default function SoportePage() {
                             <p className="text-sm text-muted-foreground mb-4">
                                 Si el problema es urgente, también puedes escribirnos directamente a nuestro correo de administración.
                             </p>
-                            <a href="mailto:soporte@animeflick.com" className="inline-flex text-sm font-medium text-foreground hover:text-primary transition">
+                            <a href="mailto:dariusgd19@gmail.com" className="inline-flex text-sm font-medium text-foreground hover:text-primary transition">
                                 soporte@animeflick.com →
                             </a>
                         </div>

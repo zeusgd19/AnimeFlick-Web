@@ -80,7 +80,7 @@ async function fallbackLatestEpisodes() {
             title,
             slug: fullSlug,
             number: episode,
-            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             url: fullSlug,
         });
     });
@@ -109,7 +109,7 @@ async function fallbackAnimesOnAir() {
             data.push({
                 title,
                 slug,
-                cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+                cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
                 type: "TV",
             });
             count++;
@@ -170,7 +170,7 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
         media.push({
             title,
             slug,
-            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
             type: typeBadge === "TV" ? "Anime" : typeBadge
         });
@@ -213,7 +213,7 @@ async function fallbackSearchAnime(query: string, page = 1) {
         media.push({
             title,
             slug,
-            cover: `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
             type: typeBadge === "TV" ? "Anime" : typeBadge
         });
@@ -269,7 +269,7 @@ async function fallbackAnimeBySlug(slug: string) {
     const next_airing_episode = nextEpisodeMatch ? nextEpisodeMatch[1] : null;
 
     const coverPath = $('.thumb img').attr('src') || "";
-    const cover = `https://animeflick.com/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
+    const cover = `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
 
     const episodes: any[] = [];
     const scriptMatch = html.match(/var episodes = (\[.*?\]);/);
