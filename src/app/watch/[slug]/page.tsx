@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import Header from "@/components/Header/header";
 import WatchPlayer from "@/components/Watch/watch-player";
 import CommentsSection from "@/components/Watch/comments-section";
@@ -19,30 +20,7 @@ function Badge({ children }: { children: React.ReactNode }) {
     );
 }
 
-function ErrorState({ encodedSlug }: { encodedSlug: string }) {
-    return (
-        <div className="mt-6 rounded-3xl border bg-card p-6">
-            <h2 className="text-lg font-semibold">No se ha podido cargar el episodio</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-                Puede ser un fallo temporal o un slug inválido.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                    href={`/watch/${encodedSlug}`}
-                    className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                >
-                    Reintentar
-                </Link>
-                <Link
-                    href="/"
-                    className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                >
-                    Volver al inicio
-                </Link>
-            </div>
-        </div>
-    );
-}
+
 
 export default async function WatchPage({
                                             params,
@@ -84,142 +62,119 @@ export default async function WatchPage({
     const nextSlug =
         animeSlug && episodeNumber ? encodeSlug(`${animeSlug}-${episodeNumber + 1}`) : null;
 
-    const canRenderPage = !!animeSlug && !!episodeNumber && !!episode;
+    // If we can't parse the slug or the episode doesn't exist, trigger 404
+    if (!animeSlug || !episodeNumber || !episode || !episode.servers?.length) {
+        notFound();
+    }
 
     return (
         <div className="min-h-dvh bg-background">
             <Header />
 
-            {canRenderPage ? (
-                <>
-                    {/* Hero */}
-                    <section className="relative overflow-hidden border-b">
-                        <div className="absolute inset-0">
-                            <div className="h-full w-full bg-accent" />
-                            <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/80 to-background" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
-                        </div>
+            {/* Hero */}
+            <section className="relative overflow-hidden border-b">
+                <div className="absolute inset-0">
+                    <div className="h-full w-full bg-accent" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/80 to-background" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
+                </div>
 
-                        <div className="relative mx-auto max-w-6xl px-4 py-6">
-                            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                <Link href="/" className="hover:text-foreground">
-                                    Inicio
-                                </Link>
-                                <span>/</span>
-                                <Link href={`/anime/${encodeSlug(animeSlug!)}`} className="hover:text-foreground">
-                                    {episode.title}
-                                </Link>
-                                <span>/</span>
-                                <span className="text-foreground">Episodio {episode.number}</span>
-                            </div>
+                <div className="relative mx-auto max-w-6xl px-4 py-6">
+                    <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <Link href="/" className="hover:text-foreground">
+                            Inicio
+                        </Link>
+                        <span>/</span>
+                        <Link href={`/anime/${encodeSlug(animeSlug)}`} className="hover:text-foreground">
+                            {episode.title}
+                        </Link>
+                        <span>/</span>
+                        <span className="text-foreground">Episodio {episode.number}</span>
+                    </div>
 
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div>
-                                    <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                                        {episode.title}
-                                    </h1>
-                                    <p className="mt-1 text-sm text-muted-foreground">Episodio {episode.number}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                                {episode.title}
+                            </h1>
+                            <p className="mt-1 text-sm text-muted-foreground">Episodio {episode.number}</p>
 
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Badge>▶ Watch</Badge>
-                                        <Badge>Servers: {episode.servers?.length ?? 0}</Badge>
-                                        {episode.servers?.some((s) => s.variant === "DUB") && (
-                                            <Badge>🗣️ DUB disponible</Badge>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2">
-                                    <Link
-                                        href={`/watch/${prevSlug!}`}
-                                        className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                                    >
-                                        ← Anterior
-                                    </Link>
-                                    <Link
-                                        href={`/watch/${nextSlug!}`}
-                                        className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
-                                    >
-                                        Siguiente →
-                                    </Link>
-                                </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <Badge>▶ Watch</Badge>
+                                <Badge>Servers: {episode.servers?.length ?? 0}</Badge>
+                                {episode.servers?.some((s) => s.variant === "DUB") && (
+                                    <Badge>🗣️ DUB disponible</Badge>
+                                )}
                             </div>
                         </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <Link
+                                href={`/watch/${prevSlug!}`}
+                                className="rounded-2xl border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+                            >
+                                ← Anterior
+                            </Link>
+                            <Link
+                                href={`/watch/${nextSlug!}`}
+                                className="rounded-2xl bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
+                            >
+                                Siguiente →
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <main className="mx-auto max-w-6xl px-4 py-8">
+                <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+                    <section className="space-y-6">
+                        <WatchPlayer animeSlug={animeSlug} episode={episode}/>
                     </section>
 
-                    <main className="mx-auto max-w-6xl px-4 py-8">
-                        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-                            <section className="space-y-6">
-                                <WatchPlayer animeSlug={animeSlug!} episode={episode}/>
-                            </section>
+                    <aside className="h-fit space-y-6">
+                        <div className="rounded-3xl border bg-card p-6 shadow-sm">
+                            <h3 className="text-sm font-semibold">Episodio</h3>
 
-                            <aside className="h-fit space-y-6">
-                                <div className="rounded-3xl border bg-card p-6 shadow-sm">
-                                    <h3 className="text-sm font-semibold">Episodio</h3>
-
-                                    <div className="mt-4 grid gap-3">
-                                        <div className="rounded-2xl border bg-card p-3">
-                                            <p className="text-xs text-muted-foreground">Título</p>
-                                            <p className="mt-1 text-sm font-semibold">{episode.title}</p>
-                                        </div>
-
-                                        <div className="rounded-2xl border bg-card p-3">
-                                            <p className="text-xs text-muted-foreground">Número</p>
-                                            <p className="mt-1 text-sm font-semibold">{episode.number}</p>
-                                        </div>
-
-                                        <div className="rounded-2xl border bg-card p-3">
-                                            <p className="text-xs text-muted-foreground">Servidores</p>
-                                            <p className="mt-1 text-sm font-semibold">{episode.servers?.length ?? 0}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-5 flex gap-2 mb-5">
-                                        <Link
-                                            href={`/anime/${encodeSlug(animeSlug!)}`}
-                                            className="flex-1 rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
-                                        >
-                                            Detalles
-                                        </Link>
-                                        <Link
-                                            href="/search"
-                                            className="flex-1 rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
-                                        >
-                                            Buscar
-                                        </Link>
-                                    </div>
-                                    <EpisodeSeenRow episodeSlug={episodeSlug}></EpisodeSeenRow>
+                            <div className="mt-4 grid gap-3">
+                                <div className="rounded-2xl border bg-card p-3">
+                                    <p className="text-xs text-muted-foreground">Título</p>
+                                    <p className="mt-1 text-sm font-semibold">{episode.title}</p>
                                 </div>
-                                <CommentsSection episodeSlug={episodeSlug} />
-                            </aside>
-                        </div>
 
-                        <Footer />
-                    </main>
-                </>
-            ) : (
-                // ERROR UI (unificado)
-                <main className="mx-auto max-w-6xl px-4 py-6">
-                    {animeSlug && episodeNumber ? (
-                        <>
-                            <div className="text-sm text-muted-foreground">
-                                <Link href="/" className="hover:text-foreground">
-                                    Inicio
-                                </Link>{" "}
-                                <span>/</span>{" "}
-                                <Link href={`/anime/${encodeSlug(animeSlug!)}`} className="hover:text-foreground">
-                                    Anime
-                                </Link>{" "}
-                                <span>/</span>{" "}
-                                <span className="text-foreground">Episodio {episodeNumber}</span>
+                                <div className="rounded-2xl border bg-card p-3">
+                                    <p className="text-xs text-muted-foreground">Número</p>
+                                    <p className="mt-1 text-sm font-semibold">{episode.number}</p>
+                                </div>
+
+                                <div className="rounded-2xl border bg-card p-3">
+                                    <p className="text-xs text-muted-foreground">Servidores</p>
+                                    <p className="mt-1 text-sm font-semibold">{episode.servers?.length ?? 0}</p>
+                                </div>
                             </div>
-                            <ErrorState encodedSlug={encodedSlug} />
-                        </>
-                    ) : (
-                        <ErrorState encodedSlug={encodedSlug} />
-                    )}
-                </main>
-            )}
+
+                            <div className="mt-5 flex gap-2 mb-5">
+                                <Link
+                                    href={`/anime/${encodeSlug(animeSlug)}`}
+                                    className="flex-1 rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
+                                >
+                                    Detalles
+                                </Link>
+                                <Link
+                                    href="/search"
+                                    className="flex-1 rounded-2xl border bg-card px-4 py-2 text-center text-sm font-medium hover:bg-accent"
+                                >
+                                    Buscar
+                                </Link>
+                            </div>
+                            <EpisodeSeenRow episodeSlug={episodeSlug}></EpisodeSeenRow>
+                        </div>
+                        <CommentsSection episodeSlug={episodeSlug} />
+                    </aside>
+                </div>
+
+                <Footer />
+            </main>
         </div>
     );
 }
