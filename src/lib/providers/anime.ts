@@ -1,11 +1,18 @@
 // src/lib/providers/anime.ts
 import "server-only";
+import { headers } from "next/headers";
 import { RealAnimeType } from "@/types/anime";
 import * as cheerio from "cheerio";
 
 // ---------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------
+async function getAppBaseUrl(): Promise<string> {
+    const h = await headers();
+    const host = h.get("host") || "localhost:3000";
+    const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+}
 function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, ms = 8000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
@@ -58,6 +65,7 @@ async function fetchHtmlFallback(url: string, nextOpts?: any, timeoutMs = 4000) 
 }
 
 async function fallbackLatestEpisodes() {
+    const appBase = await getAppBaseUrl();
     const html = await fetchHtmlFallback(`${TIO_BASE_URL}/`, { revalidate: 300 });
     const $ = cheerio.load(html);
 
@@ -80,7 +88,7 @@ async function fallbackLatestEpisodes() {
             title,
             slug: fullSlug,
             number: episode,
-            cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            cover: `${appBase}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             url: fullSlug,
         });
     });
@@ -89,6 +97,7 @@ async function fallbackLatestEpisodes() {
 }
 
 async function fallbackAnimesOnAir() {
+    const appBase = await getAppBaseUrl();
     const data: any[] = [];
     const maxPages = 2; // Fetch max 2 pages (~48 animes) to avoid sequential loop latency
 
@@ -109,7 +118,7 @@ async function fallbackAnimesOnAir() {
             data.push({
                 title,
                 slug,
-                cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+                cover: `${appBase}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
                 type: "TV",
             });
             count++;
@@ -122,6 +131,7 @@ async function fallbackAnimesOnAir() {
 }
 
 async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, arg2?: number) {
+    const appBase = await getAppBaseUrl();
     const isLegacy = typeof arg1 === "string";
     const page = isLegacy ? (arg2 ?? 1) : (arg1.page ?? 1);
 
@@ -170,7 +180,7 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
         media.push({
             title,
             slug,
-            cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            cover: `${appBase}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
             type: typeBadge === "TV" ? "Anime" : typeBadge
         });
@@ -198,6 +208,7 @@ async function fallbackAnimesByFilter(arg1: RealAnimeType | AnimeFilterParams, a
 }
 
 async function fallbackSearchAnime(query: string, page = 1) {
+    const appBase = await getAppBaseUrl();
     const url = `${TIO_BASE_URL}/directorio?q=${encodeURIComponent(query)}&p=${page}`;
     const html = await fetchHtmlFallback(url, { revalidate: 300 });
     const $ = cheerio.load(html);
@@ -213,7 +224,7 @@ async function fallbackSearchAnime(query: string, page = 1) {
         media.push({
             title,
             slug,
-            cover: `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
+            cover: `${appBase}/api/image?url=${encodeURIComponent(TIO_BASE_URL + img)}`,
             rating: "4.0",
             type: typeBadge === "TV" ? "Anime" : typeBadge
         });
@@ -228,6 +239,7 @@ async function fallbackSearchAnime(query: string, page = 1) {
 }
 
 async function fallbackAnimeBySlug(slug: string) {
+    const appBase = await getAppBaseUrl();
     const url = `${TIO_BASE_URL}/anime/${slug}`;
     const html = await fetchHtmlFallback(url, { revalidate: 300 });
     const $ = cheerio.load(html);
@@ -269,7 +281,7 @@ async function fallbackAnimeBySlug(slug: string) {
     const next_airing_episode = nextEpisodeMatch ? nextEpisodeMatch[1] : null;
 
     const coverPath = $('.thumb img').attr('src') || "";
-    const cover = `https://${window.location.hostname}/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
+    const cover = `${appBase}/api/image?url=${encodeURIComponent(TIO_BASE_URL + coverPath)}`;
 
     const episodes: any[] = [];
     const scriptMatch = html.match(/var episodes = (\[.*?\]);/);
